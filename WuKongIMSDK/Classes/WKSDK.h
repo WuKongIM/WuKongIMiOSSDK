@@ -76,8 +76,6 @@ NS_ASSUME_NONNULL_BEGIN
 // 消息已读回执管理者
 @property(nonatomic,strong) WKReceiptManager *receiptManager;
 
-// 端对端加密 Signal Protocol相关操作的管理者
-@property(nonatomic,strong) WKSignalManager *signalManager;
 
 // 消息回应管理
 //  负责点赞数据的维护

@@ -414,7 +414,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## WuKongIMSDK
 
-Copyright (c) 2019 tangtaoit <tt@limao.ai>
+Copyright (c) 2019 tangtaoit <tt@tgo.ai>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

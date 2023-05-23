@@ -6,7 +6,7 @@
 //
 
 #import "WKOptions.h"
-#define WK_DB_Prefix @"limao_"
+#define WK_DB_Prefix @"wukongim_"
 
 @implementation WKOptions
 
@@ -33,7 +33,7 @@
        self.proto = WK_PROTO_WKAO;
        self.messageFileRootDir =[[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject] stringByAppendingPathComponent:@"files"];
        self.dbPrefix = WK_DB_Prefix;
-       self.dbDir = [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject] stringByAppendingPathComponent:@"limaodbv2"];
+       self.dbDir = [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject] stringByAppendingPathComponent:@"wukongimdb"];
        self.imageMaxBytes =  1024 * 100; // 100k 缩略图最大大小
        self.syncChannelMessageLimit = 50;
        self.mosConvertOn = false;

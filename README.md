@@ -1,32 +1,10 @@
 # WuKongIMSDK
 
-对LiMaoIM协议的封装和消息的处理
+对悟空IM协议的封装和消息的处理
 
 ## 文档
 
-http://limao.io/docs/ios/
-
-## 编译打包 (见下面：用xcodebuild 打包)
-
- pod package WuKongIMSDK.podspec  --exclude-deps
-// pod package WuKongIMSDK.podspec  --no-mangle
-
-## 发布
-
-请见 WuKongIMSDK-Framework项目
-
-
-## 常见问题
-
-cocoapods 1.9.x 可能会报错 降级
-
-
-sudo gem uninstall cocoapods
-sudo gem install cocoapods -v 1.8.0
-
-
-libsignal-protocol-c 使用的 https://github.com/MixinNetwork/libsignal-protocol-c
-
+http://githubim.com/sdk/i-os
 
 ## xcodebuild 打包 （生成的文件在Example/build下）
 
@@ -41,7 +19,7 @@ xcodebuild BITCODE_GENERATION_MODE=bitcode OTHER_CFLAGS="-fembed-bitcode" -proje
 
 // 合并模拟器和真机
 
-lipo -create /Users/tt/work/projects/limao/ios/LiMaoIMiOSSDK/Example/build/Release-iphonesimulator/WuKongIMSDK/WuKongIMSDK.framework/WuKongIMSDK  /Users/tt/work/projects/limao/ios/LiMaoIMiOSSDK/Example/build/Release-iphoneos/WuKongIMSDK/WuKongIMSDK.framework/WuKongIMSDK  -output WuKongIMSDKLib
+lipo -create ./Example/build/Release-iphonesimulator/WuKongIMSDK/WuKongIMSDK.framework/WuKongIMSDK  ./Example/build/Release-iphoneos/WuKongIMSDK/WuKongIMSDK.framework/WuKongIMSDK  -output WuKongIMSDKLib
 
 获得 WuKongIMSDKLib文件 改名为WuKongIMSDK 替换WuKongIMSDK.framework内的WuKongIMSDK
 

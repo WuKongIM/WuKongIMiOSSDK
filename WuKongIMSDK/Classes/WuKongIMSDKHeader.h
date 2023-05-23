@@ -1,5 +1,5 @@
 //
-//  LiMaoSDKHeader.h
+//  WuKongIMSDKHeader.h
 //  Pods
 //
 //  Created by tt on 2022/12/13.
@@ -22,7 +22,6 @@
 #import "WKCMDManager.h"
 #import "WKReceiptManager.h"
 #import "WKTaskOperator.h"
-#import "WKSignalManager.h"
 #import "WKReactionManager.h"
 #import "WKRobotManager.h"
 #import "WKReminderManager.h"

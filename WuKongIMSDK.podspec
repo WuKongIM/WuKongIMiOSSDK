@@ -32,13 +32,7 @@ TODO: Add long description of the pod here.
   
   s.ios.deployment_target = '12.0'
   
-  #   s.xcconfig = { 'LIBRARY_SEARCH_PATHS' => '${PODS_ROOT}/LiMaoBase/Classes/Vendor/arm/lib' }
-  ## xcode12.0 上 这里如果注释掉用s.vendored_libraries会报  have the same architectures (arm64) and can't be in the same fat output file 错误
-  ##
-# s.xcconfig = { 'LIBRARY_SEARCH_PATHS' => '/Users/tt/work/projects/limao/ios/LiMaoIMiOSSDK/WuKongIMSDK/Classes/private/arm/lib' }
-  
-  ## 打包framework的时候需要把vendored_libraries注释掉 然后打开s.xcconfig
-    s.vendored_libraries = 'WuKongIMSDK/Classes/private/arm/lib/*.a'
+  s.vendored_libraries = 'WuKongIMSDK/Classes/private/arm/lib/*.a'
   
   s.preserve_paths = 'WuKongIMSDK/Classes/private/arm/lib/*.a','WuKongIMSDK/Classes/private/curve25519/ed25519/**/*.{c,h}'
   s.libraries = 'opencore-amrnb', 'opencore-amrwb','vo-amrwbenc'
@@ -47,7 +41,6 @@ TODO: Add long description of the pod here.
   s.public_header_files =  'WuKongIMSDK/Classes/**/*.h'
   s.private_header_files = 'WuKongIMSDK/Classes/private/**/*.h'
   s.frameworks = 'UIKit', 'MapKit', 'Security'
-  s.swift_version = '5.0'
 #  s.xcconfig = {
 #      'ENABLE_BITCODE' => 'NO',
 #      "OTHER_LDFLAGS" => "-ObjC"

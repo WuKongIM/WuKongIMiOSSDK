@@ -1,6 +1,6 @@
 //
 //  WKMessageStatusModel.m
-//  LiMaoBase
+//  WuKongIMBase
 //
 //  Created by tt on 2019/12/29.
 //

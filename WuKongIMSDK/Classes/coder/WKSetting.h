@@ -14,7 +14,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic,assign) BOOL receiptEnabled; //  消息是否需要发送已读回执
 
-@property(nonatomic,assign) BOOL signal; // 是否signal加密
+//@property(nonatomic,assign) BOOL signal; // 是否signal加密
 
 @property(nonatomic,assign) BOOL topic; // 是否存在话题
 

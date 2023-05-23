@@ -166,10 +166,6 @@ static WKSDK *_instance;
     return  [WKReceiptManager shared];
 }
 
-- (WKSignalManager *)signalManager {
-    return [WKSignalManager shared];
-}
-
 - (WKReactionManager *)reactionManager {
     return [WKReactionManager shared];
 }

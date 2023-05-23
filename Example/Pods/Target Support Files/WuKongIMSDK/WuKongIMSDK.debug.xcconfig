@@ -4,9 +4,8 @@ DEFINES_MODULE = YES
 EXCLUDED_ARCHS[sdk=iphonesimulator*] = arm64
 FRAMEWORK_SEARCH_PATHS = $(inherited) "${PODS_CONFIGURATION_BUILD_DIR}/25519" "${PODS_CONFIGURATION_BUILD_DIR}/CocoaAsyncSocket" "${PODS_CONFIGURATION_BUILD_DIR}/FMDB" "${PODS_CONFIGURATION_BUILD_DIR}/SQLCipher" "${PODS_CONFIGURATION_BUILD_DIR}/libsignal-protocol-c"
 GCC_PREPROCESSOR_DEFINITIONS = $(inherited) COCOAPODS=1
-LIBRARY_SEARCH_PATHS = $(inherited) "${DT_TOOLCHAIN_DIR}/usr/lib/swift/${PLATFORM_NAME}" "${PODS_ROOT}/../../WuKongIMSDK/Classes/private/arm/lib" /usr/lib/swift
+LIBRARY_SEARCH_PATHS = $(inherited) "${PODS_ROOT}/../../WuKongIMSDK/Classes/private/arm/lib"
 OTHER_LDFLAGS = $(inherited) -l"opencore-amrnb" -l"opencore-amrwb" -l"vo-amrwbenc" -framework "CFNetwork" -framework "CocoaAsyncSocket" -framework "FMDB" -framework "MapKit" -framework "Security" -framework "UIKit" -framework "_25519" -framework "libsignal_protocol_c"
-OTHER_SWIFT_FLAGS = $(inherited) -D COCOAPODS
 PODS_BUILD_DIR = ${BUILD_DIR}
 PODS_CONFIGURATION_BUILD_DIR = ${PODS_BUILD_DIR}/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)
 PODS_ROOT = ${SRCROOT}

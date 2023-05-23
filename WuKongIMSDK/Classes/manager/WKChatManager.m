@@ -267,14 +267,6 @@
         sendPacket.topic = message.topic;
         sendPacket.payload = message.content.encode;
            
-        if(sendPacket.setting.signal && message.channel.channelType == WK_PERSON) {
-            NSError *error;
-            sendPacket.payload = [[WKSDK shared].signalManager encrypt:message.channel contentData:sendPacket.payload error:&error];
-            if(error) {
-                NSLog(@"加密失败！->%@",error);
-                return;
-            }
-        }
         if(addRetryQueue) {
             // 添加到重试队列
             [[WKRetryManager shared] add:message];
@@ -482,14 +474,14 @@
 
 - (dispatch_queue_t)handleMessageQueue {
     if(!_handleMessageQueue) {
-        _handleMessageQueue =dispatch_queue_create("im.limao.handleMessageQueue", DISPATCH_QUEUE_CONCURRENT);
+        _handleMessageQueue =dispatch_queue_create("im.wukongim.handleMessageQueue", DISPATCH_QUEUE_CONCURRENT);
     }
     return _handleMessageQueue;
 }
 
 - (dispatch_queue_t)sendMessageQueue {
     if(!_sendMessageQueue) {
-        _sendMessageQueue = dispatch_queue_create("im.limao.sendMessage", DISPATCH_QUEUE_CONCURRENT);
+        _sendMessageQueue = dispatch_queue_create("im.wukongim.sendMessage", DISPATCH_QUEUE_CONCURRENT);
     }
     return _sendMessageQueue;
 }
@@ -1162,32 +1154,13 @@
        
         NSData *planPayloadData = packet.payload;
         
-        BOOL signalFail = false;
-        if(packet.setting.signal) {
-            @try {
-                NSError *error;
-                planPayloadData = [[WKSignalManager shared] decrypt:message.channel encryptData:packet.payload error:&error];
-                if(error) {
-                    signalFail = true;
-                    NSLog(@"signal解密失败！error-> %@",error);
-                }
-            } @catch (NSException *exception) {
-                signalFail = true;
-                NSLog(@"signal解密失败！-> %@",exception);
-            }
-        }
     
         message.status = WK_MESSAGE_SUCCESS;
         
         WKMessageContent *messageContent;
         NSNumber *contentType;
-        if(signalFail) {
-            messageContent = [WKSignalErrorContent new];
-            contentType = @(WK_SIGNAL_ERROR);
-        }else {
-             messageContent = [self decodeContent:planPayloadData contentType:&contentType];
-             message.contentData = planPayloadData;
-        }
+        messageContent = [self decodeContent:planPayloadData contentType:&contentType];
+        message.contentData = planPayloadData;
         
        
         

@@ -1,6 +1,6 @@
 //
 //  WKRetryManager.m
-//  LiMaoBase
+//  WuKongIMBase
 // 消息重试管理
 //  Created by tt on 2019/12/29.
 //
