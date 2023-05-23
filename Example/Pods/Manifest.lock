@@ -1,0 +1,70 @@
+PODS:
+  - 25519 (2.0.2)
+  - CocoaAsyncSocket (7.6.5)
+  - Expecta (1.0.6)
+  - "Expecta+Snapshots (3.1.1)":
+    - Expecta (~> 1.0)
+    - FBSnapshotTestCase/Core (~> 2.0)
+    - Specta (~> 1.0)
+  - FBSnapshotTestCase (2.1.4):
+    - FBSnapshotTestCase/SwiftSupport (= 2.1.4)
+  - FBSnapshotTestCase/Core (2.1.4)
+  - FBSnapshotTestCase/SwiftSupport (2.1.4):
+    - FBSnapshotTestCase/Core
+  - FMDB/SQLCipher (2.7.5):
+    - SQLCipher
+  - libsignal-protocol-c (2.3.3)
+  - OCMock (3.4.3)
+  - Specta (1.0.7)
+  - SQLCipher (4.5.3):
+    - SQLCipher/standard (= 4.5.3)
+  - SQLCipher/common (4.5.3)
+  - SQLCipher/standard (4.5.3):
+    - SQLCipher/common
+  - WuKongIMSDK (1.0.0):
+    - 25519 (~> 2.0.2)
+    - CocoaAsyncSocket (~> 7.6.4)
+    - FMDB/SQLCipher (~> 2.7.5)
+    - libsignal-protocol-c
+
+DEPENDENCIES:
+  - Expecta
+  - "Expecta+Snapshots"
+  - FBSnapshotTestCase
+  - OCMock
+  - Specta
+  - WuKongIMSDK (from `../`)
+
+SPEC REPOS:
+  trunk:
+    - '25519'
+    - CocoaAsyncSocket
+    - Expecta
+    - "Expecta+Snapshots"
+    - FBSnapshotTestCase
+    - FMDB
+    - libsignal-protocol-c
+    - OCMock
+    - Specta
+    - SQLCipher
+
+EXTERNAL SOURCES:
+  WuKongIMSDK:
+    :path: "../"
+
+SPEC CHECKSUMS:
+  '25519': dc4bad7e2dbcbf1efa121068a705a44cd98c80fc
+  CocoaAsyncSocket: 065fd1e645c7abab64f7a6a2007a48038fdc6a99
+  Expecta: 3b6bd90a64b9a1dcb0b70aa0e10a7f8f631667d5
+  "Expecta+Snapshots": dcff217eef506dabd6dfdc7864ea2da321fafbb8
+  FBSnapshotTestCase: 094f9f314decbabe373b87cc339bea235a63e07a
+  FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
+  libsignal-protocol-c: be12f5be7f296d876ffb4dfc14f3fa1c0e823784
+  OCMock: 43565190abc78977ad44a61c0d20d7f0784d35ab
+  Specta: 3e1bd89c3517421982dc4d1c992503e48bd5fe66
+  SQLCipher: 57fa9f863fa4a3ed9dd3c90ace52315db8c0fdca
+  WuKongIMSDK: e4ec0b9e96d2bb604aa0865e1a68a1c26708f996
+
+PODFILE CHECKSUM: 13affc6f1b701124f3fc7ae2bf04c2db0f76c829
+
+COCOAPODS: 1.11.0
