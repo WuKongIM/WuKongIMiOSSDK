@@ -31,14 +31,11 @@ end
 
 target 'WuKongIMSDK_Example' do
   pod 'WuKongIMSDK', :path => '../'
-
+  pod 'AFNetworking', '~> 4.0'
+  pod 'MBProgressHUD', '~> 1.1.0'
   target 'WuKongIMSDK_Tests' do
     inherit! :search_paths
 
-    pod 'Specta'
-    pod 'Expecta'
-    pod 'FBSnapshotTestCase'
-    pod 'Expecta+Snapshots'
-    pod 'OCMock'
+    
   end
 end

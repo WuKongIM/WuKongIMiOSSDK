@@ -773,9 +773,7 @@ static dispatch_queue_t _imsocketQueue;
 // 处理连接成功的逻辑
 -(void) handleConnected:(WKConnackPacket*)connackPacket{
     
-    if([WKSDK shared].options.protoVersion>2) {
-        [[WKSecurityManager shared] generateAesKey:connackPacket.serverKey salt:connackPacket.salt];
-    }
+    [[WKSecurityManager shared] generateAesKey:connackPacket.serverKey salt:connackPacket.salt];
    
     // 重连次数归0
     self.reconnectCount = 0;

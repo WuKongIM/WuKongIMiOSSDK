@@ -9,7 +9,7 @@
 Pod::Spec.new do |s|
   s.name             = 'WuKongIMSDK'
   s.version          = '1.0.0'
-  s.summary          = 'A short description of WuKongIMSDK.'
+  s.summary          = ' SKD for WuKongIM.'
 
 # This description is used to generate tags and improve search results.
 #   * Think: What does it do? Why did you write it? What is the focus?
@@ -56,14 +56,7 @@ TODO: Add long description of the pod here.
     }
     s.user_target_xcconfig = { 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'arm64' }
 
-
-  # s.public_header_files = 'Pod/Classes/**/*.h'
-  # s.frameworks = 'UIKit', 'MapKit'
-  # s.dependency 'AFNetworking', '~> 2.3'
   s.dependency 'CocoaAsyncSocket', '~> 7.6.4'
-#  s.dependency 'FMDB', '~>2.7.5'
   s.dependency 'FMDB/SQLCipher', '~>2.7.5'
   s.dependency '25519', '~>2.0.2'
-  s.dependency 'libsignal-protocol-c'
-#  s.dependency 'LibSignalProtocolSwift'
 end

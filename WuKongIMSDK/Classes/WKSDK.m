@@ -194,6 +194,10 @@ static WKSDK *_instance;
     return self.options.isDebug;
 }
 
+- (NSString *)sdkVersion {
+    return @"1.0.0";
+}
+
 
 -(void) registerMessageContent:(Class)cls {
     [self registerMessageContent:cls contentType:[cls contentType]];

@@ -90,6 +90,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property(nonatomic,strong) WKFlameManager *flameManager; // 阅后即焚管理者
 
+// sdk版本号，每次升级记得修改此处
+@property(nonatomic,copy,readonly) NSString *sdkVersion;
+
 /**
  是否是debug模式
 

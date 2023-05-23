@@ -2,12 +2,9 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "group:/Users/tt/work/projects/wukongIM/iOS/WuKongIMiOSSDK/Example/WuKongIMSDK.xcodeproj">
+      location = "group:WuKongIMSDK.xcodeproj">
    </FileRef>
    <FileRef
       location = "group:Pods/Pods.xcodeproj">
-   </FileRef>
-   <FileRef
-      location = "group:WuKongIMSDK.xcodeproj">
    </FileRef>
 </Workspace>

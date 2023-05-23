@@ -1,7 +1,7 @@
 {
   "name": "WuKongIMSDK",
   "version": "1.0.0",
-  "summary": "A short description of WuKongIMSDK.",
+  "summary": "SKD for WuKongIM.",
   "description": "TODO: Add long description of the pod here.",
   "homepage": "https://github.com/WuKongIM/WuKongIMiOSSDK",
   "license": {
@@ -58,9 +58,6 @@
     ],
     "25519": [
       "~>2.0.2"
-    ],
-    "libsignal-protocol-c": [
-
     ]
   }
 }

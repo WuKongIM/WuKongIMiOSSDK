@@ -2,48 +2,34 @@
 //  WuKongIMSDKTests.m
 //  WuKongIMSDKTests
 //
-//  Created by tangtaoit on 11/23/2019.
-//  Copyright (c) 2019 tangtaoit. All rights reserved.
+//  Created by 3895878 on 05/23/2023.
+//  Copyright (c) 2023 3895878. All rights reserved.
 //
 
-// https://github.com/Specta/Specta
+@import XCTest;
 
-SpecBegin(InitialSpecs)
+@interface Tests : XCTestCase
 
-describe(@"these will fail", ^{
+@end
 
-    it(@"can do maths", ^{
-        NSLog(@"dddd");
-        expect(2).to.equal(2);
-    });
+@implementation Tests
 
-    it(@"can read", ^{
-        expect(@"number").to.equal(@"number");
-    });
-    
-    it(@"will wait for 10 seconds and fail", ^{
-        waitUntil(^(DoneCallback done) {
-           done();
-        });
-    });
-});
+- (void)setUp
+{
+    [super setUp];
+    // Put setup code here. This method is called before the invocation of each test method in the class.
+}
 
-describe(@"these will pass", ^{
-    
-    it(@"can do maths", ^{
-        expect(1).beLessThan(23);
-    });
-    
-    it(@"can read", ^{
-        expect(@"team").toNot.contain(@"I");
-    });
-    
-    it(@"will wait and succeed", ^{
-        waitUntil(^(DoneCallback done) {
-            done();
-        });
-    });
-});
+- (void)tearDown
+{
+    // Put teardown code here. This method is called after the invocation of each test method in the class.
+    [super tearDown];
+}
 
-SpecEnd
+- (void)testExample
+{
+    XCTFail(@"No implementation for \"%s\"", __PRETTY_FUNCTION__);
+}
+
+@end
 
