@@ -700,7 +700,14 @@
     if([WKSDK shared].isDebug) {
         NSLog(@"##########拉取频道[%@]消息##########",channel);
     }
+    
+    if(pullMode == WKPullModeDown && startOrderSeq == 1*WKOrderSeqFactor) { // 1表示消息已经到顶了，肯定没数据了
+        [self completePullMessages:nil error:nil complete:complete];
+        return;
+    }
+    
     NSArray<WKMessage*> *messages = [self getLocalMessages:channel startOrderSeq:startOrderSeq endOrderSeq:endOrderSeq  limit:limit pullMode:pullMode];
+    
     NSArray<WKMessage*> *newMessages = [NSArray arrayWithArray:messages];
     newMessages = [newMessages sortedArrayUsingComparator:^NSComparisonResult(WKMessage * _Nonnull obj1, WKMessage * _Nonnull obj2) {
         if(obj1.messageSeq<obj2.messageSeq) {

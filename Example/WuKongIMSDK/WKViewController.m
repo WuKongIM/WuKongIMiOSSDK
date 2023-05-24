@@ -9,6 +9,7 @@
 #import <WuKongIMSDK/WuKongIMSDK.h>
 #import "WKMessageTableView.h"
 #import "WKSettingView.h"
+#import "WKAPIClient.h"
 @interface WKViewController ()<WKConnectionManagerDelegate,UITextFieldDelegate,WKChatManagerDelegate>
 
 @property(nonatomic,copy) NSString *status;
@@ -186,6 +187,31 @@
     self.tableView.channel = self.toChannel;
     self.settingView.defaultChannel = channel;
     [self.tableView reload];
+    
+    if(channel.channelType == WK_GROUP) {
+        [self addSubscriber:WKSDK.shared.options.connectInfo.uid];
+    }
+    
+}
+
+-(void) addSubscriber:(NSString*)uid {
+    [WKAPIClient.shared POST:@"/channel/subscriber_add" parameters:@{
+        @"channel_id":self.toChannel.channelId,
+        @"channel_type":@(self.toChannel.channelType),
+        @"subscribers":@[uid]
+    } complete:^(id  _Nonnull respose, NSError * _Nonnull error) {
+        
+    }];
+}
+
+-(void) removeSubscriber:(NSString*)uid {
+    [WKAPIClient.shared POST:@"/channel/subscriber_remove" parameters:@{
+        @"channel_id":self.toChannel.channelId,
+        @"channel_type":@(self.toChannel.channelType),
+        @"subscribers":@[uid]
+    } complete:^(id  _Nonnull respose, NSError * _Nonnull error) {
+        
+    }];
 }
 
 // 键盘显示
