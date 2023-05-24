@@ -33,6 +33,7 @@ target 'WuKongIMSDK_Example' do
   pod 'WuKongIMSDK', :path => '../'
   pod 'AFNetworking', '~> 4.0'
   pod 'MBProgressHUD', '~> 1.1.0'
+  pod 'MJRefresh', '~> 3.7.5'
   target 'WuKongIMSDK_Tests' do
     inherit! :search_paths
 

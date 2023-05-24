@@ -40,18 +40,26 @@
 }
 
 -(void) GET:(NSString*)path parameters:(id)parameters complete:(void(^)(id respose,NSError *error))complete{
-    
+    NSLog(@"请求路径：%@",path);
+    NSLog(@"请求参数：%@",parameters);
     [self.sessionManager GET:path parameters:parameters headers:nil progress:nil success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
+        NSLog(@"返回结果：%@",responseObject);
         complete(responseObject,nil);
     } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
+        NSLog(@"返回失败：%@",error);
         complete(nil,error);
     }];
 }
 
 -(void) POST:(NSString*)path parameters:(id)parameters complete:(void(^)(id respose,NSError *error))complete{
+    NSLog(@"请求路径：%@",path);
+    NSLog(@"请求参数：%@",parameters);
     [self.sessionManager POST:path parameters:parameters headers:nil progress:nil success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
+        NSLog(@"返回结果：%@",responseObject);
         complete(responseObject,nil);
+        
     } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
+        NSLog(@"返回失败：%@",error);
         complete(nil,error);
     }];
 }

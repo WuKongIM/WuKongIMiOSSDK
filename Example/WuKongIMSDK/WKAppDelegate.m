@@ -8,6 +8,7 @@
 
 #import "WKAppDelegate.h"
 #import "WKLoginViewController.h"
+#import "WKDatasource.h"
 
 @implementation WKAppDelegate
 
@@ -22,6 +23,10 @@
     
     [UIApplication sharedApplication].statusBarStyle = UIStatusBarStyleDarkContent;
     [UIApplication sharedApplication].keyWindow.overrideUserInterfaceStyle = UIUserInterfaceStyleLight;
+    
+    // 数据源安装
+    [WKDatasource.shared setup];
+    
     return YES;
 }
 

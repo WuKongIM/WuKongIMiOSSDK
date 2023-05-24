@@ -56,6 +56,23 @@
     return _contentView;
 }
 
+- (BOOL)isShow {
+    return self.superview != nil;
+}
+
+- (void)setDefaultChannel:(WKChannel *)defaultChannel {
+    _defaultChannel = defaultChannel;
+    if(defaultChannel) {
+        if(defaultChannel.channelType == WK_PERSON) {
+            self.segmentCtl.selectedSegmentIndex = 0;
+        }else {
+            self.segmentCtl.selectedSegmentIndex = 1;
+        }
+        self.inputFd.text = self.defaultChannel.channelId;
+    }
+    
+}
+
 -(void) show {
     if (self.superview != nil) {
            return;
@@ -146,9 +163,8 @@
 }
 
 -(void) selectChange:(UISegmentedControl *)sc {
-    NSLog(@"---->%ld",(long)sc.selectedSegmentIndex);
     if(sc.selectedSegmentIndex == 0) {
-        _inputFd.placeholder = @"请输入对方登录名(uid)";
+        _inputFd.placeholder = @"请输入对方登录名";
     }else {
         _inputFd.placeholder = @"请输入群编号";
     }

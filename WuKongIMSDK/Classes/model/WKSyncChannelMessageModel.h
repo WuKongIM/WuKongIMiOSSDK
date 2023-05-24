@@ -11,8 +11,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface WKSyncChannelMessageModel : NSObject
 
-@property(nonatomic,assign) uint32_t minMessageSeq; // 最小消息序列号
-@property(nonatomic,assign) uint32_t maxMessageSeq; // 最大消息序列号
+@property(nonatomic,assign) uint32_t startMessageSeq; // 开始消息序列号
+@property(nonatomic,assign) uint32_t endMessageSeq; // 结束消息序列号
 @property(nonatomic,assign) BOOL more; // 是否还有更多数据
 @property(nonatomic,strong) NSArray<WKMessage*> *messages; // 消息集合
 

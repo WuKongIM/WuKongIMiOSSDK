@@ -14,6 +14,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property(nonatomic,copy) void(^onChannelSelct)(WKChannel*channel);
 
+@property(nonatomic,assign,readonly) BOOL isShow;
+
+@property(nonatomic,strong) WKChannel *defaultChannel;
+
 -(void) show;
 
 -(void) hide;

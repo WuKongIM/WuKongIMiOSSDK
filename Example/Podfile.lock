@@ -19,6 +19,7 @@ PODS:
   - FMDB/SQLCipher (2.7.5):
     - SQLCipher
   - MBProgressHUD (1.1.0)
+  - MJRefresh (3.7.5)
   - SQLCipher (4.5.3):
     - SQLCipher/standard (= 4.5.3)
   - SQLCipher/common (4.5.3)
@@ -32,6 +33,7 @@ PODS:
 DEPENDENCIES:
   - AFNetworking (~> 4.0)
   - MBProgressHUD (~> 1.1.0)
+  - MJRefresh (~> 3.7.5)
   - WuKongIMSDK (from `../`)
 
 SPEC REPOS:
@@ -41,6 +43,7 @@ SPEC REPOS:
     - CocoaAsyncSocket
     - FMDB
     - MBProgressHUD
+    - MJRefresh
     - SQLCipher
 
 EXTERNAL SOURCES:
@@ -53,9 +56,10 @@ SPEC CHECKSUMS:
   CocoaAsyncSocket: 065fd1e645c7abab64f7a6a2007a48038fdc6a99
   FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
   MBProgressHUD: e7baa36a220447d8aeb12769bf0585582f3866d9
+  MJRefresh: fdf5e979eb406a0341468932d1dfc8b7f9fce961
   SQLCipher: 57fa9f863fa4a3ed9dd3c90ace52315db8c0fdca
   WuKongIMSDK: 7b6de0613001467a86baad50159ae760419ac230
 
-PODFILE CHECKSUM: fd0edb85c2c4b8abf6c8d57c6954725bf0461e90
+PODFILE CHECKSUM: 00aa3bd48d9c6972f4a44310e103f359a3484dc4
 
 COCOAPODS: 1.11.0

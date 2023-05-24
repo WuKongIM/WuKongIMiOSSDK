@@ -42,11 +42,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// 获取频道中，从指定消息之前、指定数量的最新消息实体
 /// @param channel 查询指定频道
-/// @param baseOrderSeq 基础Seq
+/// @param startOrderSeq 开始orderSeq
 /// @param endOrderSeq 结束排序seq
 /// @param limit 限制
-/// @param less 是否查询比baseOrderSeq小的消息
--(NSArray<WKMessage*>*) getMessages:(WKChannel*)channel baseOrderSeq:(uint32_t)baseOrderSeq endOrderSeq:(uint32_t)endOrderSeq  limit:(int) limit less:(BOOL)less;
+/// @param pullMode 拉取模式
+-(NSArray<WKMessage*>*) getMessages:(WKChannel*)channel startOrderSeq:(uint32_t)startOrderSeq endOrderSeq:(uint32_t)endOrderSeq  limit:(int) limit pullMode:(WKPullMode)pullMode;
 
 
 /// 获取消息列表
@@ -68,6 +68,18 @@ NS_ASSUME_NONNULL_BEGIN
 /// @param minMessageSeq 最小消息序号
 /// @param maxMessageSeq 最大消息序号
 -(NSArray<NSNumber*>*) getDeletedMessageSeqWithChannel:(WKChannel*)channel  minMessageSeq:(uint32_t)minMessageSeq maxMessageSeq:(uint32_t)maxMessageSeq;
+
+/// 获取比messageSeq小并且已删除了的序号
+/// @param channel 频道
+/// @param messageSeq  消息序号
+/// @param limit 最大数量
+-(NSArray<NSNumber*>*) getDeletedLessThanMessageSeqWithChannel:(WKChannel*)channel  messageSeq:(uint32_t)messageSeq limit:(int)limit;
+
+/// 获取比messageSeq大并且已删除了的序号
+/// @param channel 频道
+/// @param messageSeq  消息序号
+/// @param limit 最大数量
+-(NSArray<NSNumber*>*) getDeletedMoreThanMessageSeqWithChannel:(WKChannel*)channel  messageSeq:(uint32_t)messageSeq limit:(int)limit;
 
 /**
  通过序列号获取消息

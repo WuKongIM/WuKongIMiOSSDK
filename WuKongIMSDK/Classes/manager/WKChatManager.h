@@ -158,6 +158,15 @@ typedef BOOL(^MessageStoreBeforeIntercept)(WKMessage*message);
 -(void) pullLastMessages:(WKChannel*)channel limit:(int)limit complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete;
 
 /**
+  查询某个频道最新的消息 （一般是第一次进入会话页面查询首屏消息时调用此方法）
+ @param channel 频道
+ @param limit 消息数量限制
+ @param complete 查询回调
+ @param alwayRequest 是否总是从服务器请求最新的消息数据
+ */
+-(void) pullLastMessages:(WKChannel*)channel limit:(int)limit alwayRequest:(BOOL)alwayRequest complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete;
+
+/**
   下拉加载消息
  @param channel 频道
  @param startOrderSeq 起始的orderSeq 比如需要查询 100以上的10条消息 那么startOrderSeq就是100 查询出来的数据为 90 91 92 93 94 95 96 97 98 99
@@ -186,13 +195,13 @@ typedef BOOL(^MessageStoreBeforeIntercept)(WKMessage*message);
 /**
   拉取历史消息
  @param channel 频道
- @param baseOrderSeq 基准messageSeq 以此messageSeq为基准进行上下浮动查询
+ @param startOrderSeq 基准messageSeq 以此messageSeq为基准进行上下浮动查询
  @param endOrderSeq 结束的messageSeq 查询到此messageSeq为终止 如果为 0 则不做限制 limit限制查询数量
  @param limit 消息数量限制
- @param less 是否比baseMessageSeq更小 false.更小（messageSeq<BaseMessageSeq） true.更大 (messageSeq>BaseMessageSeq)
+ @param pullMode 拉取方式
  @param complete 查询回调
  */
--(void) pullMessages:(WKChannel*)channel baseOrderSeq:(uint32_t)baseOrderSeq endOrderSeq:(uint32_t)endOrderSeq limit:(int)limit less:(BOOL)less  complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete DEPRECATED_MSG_ATTRIBUTE("use pullDown or pullUp");
+-(void) pullMessages:(WKChannel*)channel startOrderSeq:(uint32_t)startOrderSeq endOrderSeq:(uint32_t)endOrderSeq limit:(int)limit pullMode:(WKPullMode)pullMode  complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete DEPRECATED_MSG_ATTRIBUTE("use pullDown or pullUp");
 
 /**
  查询消息

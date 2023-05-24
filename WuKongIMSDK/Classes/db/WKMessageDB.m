@@ -127,6 +127,10 @@
 
 #define SQL_DELETED_MESSAGE_SEQ_WITH_MESSAGE_SEQ [NSString stringWithFormat:@"select message_seq from %@ where channel_id=? and channel_type=? and is_deleted = 1 and message_seq<>0 and  message_seq>? and message_seq<? order by message_seq asc",TB_MESSAGE]
 
+#define SQL_DELETED_MESSAGE_SEQ_WITH_MESSAGE_SEQ_LESS [NSString stringWithFormat:@"select message_seq from %@ where channel_id=? and channel_type=? and is_deleted = 1 and message_seq<>0 and  message_seq<?  order by message_seq desc limit 0,?",TB_MESSAGE]
+
+#define SQL_DELETED_MESSAGE_SEQ_WITH_MESSAGE_SEQ_MORE [NSString stringWithFormat:@"select message_seq from %@ where channel_id=? and channel_type=? and is_deleted = 1 and message_seq<>0 and  message_seq>?  order by message_seq asc limit 0,?",TB_MESSAGE]
+
 //查询排序在指定message之前的消息数量
 #define SQL_MESSAGE_ORDER_COUNT_WITH_MORE_THAN_ORDER_SEQ [NSString stringWithFormat:@"select count(*) cn from %@ where channel_id=? and channel_type=? and  content_type<>99 and order_seq>? and is_deleted=0 order by order_seq desc",TB_MESSAGE]
 
@@ -310,18 +314,17 @@ static WKMessageDB *_instance;
     [result close];
     return isExit;
 }
-
--(NSArray<WKMessage*>*) getMessages:(WKChannel*)channel baseOrderSeq:(uint32_t)baseOrderSeq endOrderSeq:(uint32_t)endOrderSeq limit:(int) limit less:(BOOL)less {
+-(NSArray<WKMessage*>*) getMessages:(WKChannel*)channel startOrderSeq:(uint32_t)startOrderSeq endOrderSeq:(uint32_t)endOrderSeq  limit:(int) limit pullMode:(WKPullMode)pullMode {
     __block NSMutableArray *messages = [NSMutableArray new];
         [[WKDB sharedDB].dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
             FMResultSet *result;
-            if(baseOrderSeq==0 && endOrderSeq == 0) {
+            if(startOrderSeq==0 && endOrderSeq == 0) {
                 result = [db executeQuery:SQL_MESSAGE_QUERY(@"desc"),channel.channelId?:@"",@(channel.channelType),@(limit)];
             }else {
                 NSString *symbol1;
                 NSString *symbol2;
-                if(less) {
-                    if(baseOrderSeq>0 && endOrderSeq == 0) {
+                if(pullMode == WKPullModeDown) {
+                    if(startOrderSeq>0 && endOrderSeq == 0) {
                         symbol1 = @"<";
                     }else {
                         symbol1 = @"<";
@@ -329,13 +332,13 @@ static WKMessageDB *_instance;
                     }
                     
                     if(!symbol2) {
-                        result = [db executeQuery:SQL_MESSAGE_QUERY_OLDESTID_DESC(symbol1,nil),channel.channelId?:@"",@(channel.channelType),@(baseOrderSeq),@(limit)];
+                        result = [db executeQuery:SQL_MESSAGE_QUERY_OLDESTID_DESC(symbol1,nil),channel.channelId?:@"",@(channel.channelType),@(startOrderSeq),@(limit)];
                     }else{
-                        result = [db executeQuery:SQL_MESSAGE_QUERY_OLDESTID_DESC(symbol1,symbol2),channel.channelId?:@"",@(channel.channelType),@(baseOrderSeq),@(endOrderSeq),@(limit)];
+                        result = [db executeQuery:SQL_MESSAGE_QUERY_OLDESTID_DESC(symbol1,symbol2),channel.channelId?:@"",@(channel.channelType),@(startOrderSeq),@(endOrderSeq),@(limit)];
                     }
                    
                 }else {
-                    if(baseOrderSeq>0 && endOrderSeq == 0) {
+                    if(startOrderSeq>0 && endOrderSeq == 0) {
                         symbol1 = @">";
                     }else {
                         symbol1 = @">";
@@ -343,9 +346,9 @@ static WKMessageDB *_instance;
                     }
                     
                     if(!symbol2) {
-                        result = [db executeQuery:SQL_MESSAGE_QUERY_OLDESTID_ASC(symbol1,nil),channel.channelId?:@"",@(channel.channelType),@(baseOrderSeq),@(limit)];
+                        result = [db executeQuery:SQL_MESSAGE_QUERY_OLDESTID_ASC(symbol1,nil),channel.channelId?:@"",@(channel.channelType),@(startOrderSeq),@(limit)];
                     }else {
-                        result = [db executeQuery:SQL_MESSAGE_QUERY_OLDESTID_ASC(symbol1,symbol2),channel.channelId?:@"",@(channel.channelType),@(baseOrderSeq),@(endOrderSeq),@(limit)];
+                        result = [db executeQuery:SQL_MESSAGE_QUERY_OLDESTID_ASC(symbol1,symbol2),channel.channelId?:@"",@(channel.channelType),@(startOrderSeq),@(endOrderSeq),@(limit)];
                     }
                     
                    
@@ -408,6 +411,30 @@ static WKMessageDB *_instance;
     __block NSMutableArray<NSNumber*> *messageSeqs = [NSMutableArray new];
     [[WKDB sharedDB].dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
         FMResultSet *result =[db executeQuery:SQL_DELETED_MESSAGE_SEQ_WITH_MESSAGE_SEQ,channel.channelId?:@"",@(channel.channelType),@(minMessageSeq),@(maxMessageSeq)];
+        while (result.next) {
+            [messageSeqs addObject:@([result unsignedLongLongIntForColumn:@"message_seq"])];
+        }
+        [result close];
+    }];
+    return messageSeqs;
+}
+
+-(NSArray<NSNumber*>*) getDeletedLessThanMessageSeqWithChannel:(WKChannel*)channel  messageSeq:(uint32_t)messageSeq limit:(int)limit {
+    __block NSMutableArray<NSNumber*> *messageSeqs = [NSMutableArray new];
+    [[WKDB sharedDB].dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        FMResultSet *result =[db executeQuery:SQL_DELETED_MESSAGE_SEQ_WITH_MESSAGE_SEQ_LESS,channel.channelId?:@"",@(channel.channelType),@(messageSeq),@(limit)];
+        while (result.next) {
+            [messageSeqs addObject:@([result unsignedLongLongIntForColumn:@"message_seq"])];
+        }
+        [result close];
+    }];
+    return messageSeqs;
+}
+
+- (NSArray<NSNumber *> *)getDeletedMoreThanMessageSeqWithChannel:(WKChannel *)channel messageSeq:(uint32_t)messageSeq limit:(int)limit {
+    __block NSMutableArray<NSNumber*> *messageSeqs = [NSMutableArray new];
+    [[WKDB sharedDB].dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        FMResultSet *result =[db executeQuery:SQL_DELETED_MESSAGE_SEQ_WITH_MESSAGE_SEQ_MORE,channel.channelId?:@"",@(channel.channelType),@(messageSeq),@(limit)];
         while (result.next) {
             [messageSeqs addObject:@([result unsignedLongLongIntForColumn:@"message_seq"])];
         }

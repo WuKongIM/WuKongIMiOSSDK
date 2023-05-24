@@ -9,7 +9,7 @@
 #import <WuKongIMSDK/WuKongIMSDK.h>
 #import "WKMessageTableView.h"
 #import "WKSettingView.h"
-@interface WKViewController ()<WKConnectionManagerDelegate>
+@interface WKViewController ()<WKConnectionManagerDelegate,UITextFieldDelegate,WKChatManagerDelegate>
 
 @property(nonatomic,copy) NSString *status;
 
@@ -22,6 +22,9 @@
 @property(nonatomic,strong) UITextField *inputFd;
 
 @property(nonatomic,strong) UIButton *toBtn; // 聊天对象
+@property(nonatomic,strong) WKChannel *toChannel;
+
+@property(nonatomic,assign) BOOL hasAlert;
 
 @end
 
@@ -34,6 +37,9 @@
     self.view.backgroundColor = [UIColor colorWithRed:240.0f/255.0f green:240.0f/255.0f blue:240.0f/255.0f alpha:1.0f];
     [self refreshTitle];
     
+    [WKSDK.shared.chatManager addDelegate:self];
+    [WKSDK.shared.connectionManager addDelegate:self];
+    
     UIBarButtonItem *rightBtn = [[UIBarButtonItem alloc] initWithCustomView:self.toBtn];
     
     self.navigationItem.rightBarButtonItem = rightBtn;
@@ -42,14 +48,27 @@
     [self.view addSubview:self.tableView];
     
     
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillHide:) name:UIKeyboardWillHideNotification object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillShow:) name:UIKeyboardWillShowNotification object:nil];
+   
     
     
     [self initOptions]; // 初始化配置
     [self connect]; // 连接IM
     
   
+}
+
+
+- (void)viewDidAppear:(BOOL)animated {
+    [super viewDidAppear:animated];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillHide:) name:UIKeyboardWillHideNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillShow:) name:UIKeyboardWillShowNotification object:nil];
+}
+
+- (void)viewDidDisappear:(BOOL)animated {
+    [super viewDidDisappear:animated];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIKeyboardWillHideNotification object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIKeyboardWillShowNotification object:nil];
+    
 }
 
 -(void) initOptions {
@@ -89,13 +108,52 @@
 #pragma mark -- WKConnectionManagerDelegate
 
 - (void)onConnectStatus:(WKConnectStatus)status reasonCode:(WKReason)reasonCode {
+    NSLog(@"连接状态-->%hhu",reasonCode);
     if(reasonCode == WK_REASON_SUCCESS) {
         self.status = @"已连接";
     }else {
         self.status = @"已断开";
     }
     [self refreshTitle];
+    
+    if(reasonCode == WK_REASON_KICK) { // 被踢
+        UIAlertController *alertCtl = [UIAlertController alertControllerWithTitle:nil message:@"您账号在其他地方登录" preferredStyle:UIAlertControllerStyleAlert];
+        
+        [alertCtl addAction:[UIAlertAction actionWithTitle:@"确定" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+            [self.navigationController popViewControllerAnimated:YES];
+        }]];
+        
+        [self presentViewController:alertCtl animated:YES completion:nil];
+    }
 }
+
+#pragma mark -- WKChatManagerDelegate
+
+- (void)onRecvMessages:(WKMessage *)message left:(NSInteger)left {
+    if(self.toChannel) {
+        return;
+    }
+    if(message.channel.channelType != WK_PERSON || self.hasAlert) {
+        return;
+    }
+    self.hasAlert = true;
+    UIAlertController *alertCtl = [UIAlertController alertControllerWithTitle:nil message:[NSString stringWithFormat:@"%@想跟你聊天",message.channel.channelId] preferredStyle:UIAlertControllerStyleAlert];
+    
+    [alertCtl addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+        self.hasAlert = false;
+    }]];
+    
+    [alertCtl addAction:[UIAlertAction actionWithTitle:@"确定" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        self.hasAlert = false;
+        [self.toBtn setTitle:message.channel.channelId forState:UIControlStateNormal];
+        [self reloadChannelMessage:message.channel];
+    }]];
+    
+    [self presentViewController:alertCtl animated:YES completion:nil];
+    
+}
+
+
 
 
 #pragma mark -- 其他
@@ -115,11 +173,19 @@
         _settingView = [[WKSettingView alloc] init];
         __weak typeof(self) weakSelf = self;
         _settingView.onChannelSelct = ^(WKChannel * _Nonnull channel) {
+            [weakSelf reloadChannelMessage:channel];
             [weakSelf.toBtn setTitle:channel.channelId forState:UIControlStateNormal];
             [weakSelf.settingView hide];
         };
     }
     return _settingView;
+}
+
+-(void) reloadChannelMessage:(WKChannel*)channel {
+    self.toChannel = channel;
+    self.tableView.channel = self.toChannel;
+    self.settingView.defaultChannel = channel;
+    [self.tableView reload];
 }
 
 // 键盘显示
@@ -133,6 +199,11 @@
 }
 
 - (void)handleKeyboardNotification:(NSNotification *)notification show:(BOOL)show{
+    
+    if(self.settingView.isShow) {
+        return;
+    }
+    
     CGRect keyboardBeginFrame = [notification.userInfo[UIKeyboardFrameBeginUserInfoKey] CGRectValue];
     CGRect keyboardBeginFrameInView = [self.view convertRect:keyboardBeginFrame fromView:nil];
     CGRect keyboardEndFrame = [notification.userInfo[UIKeyboardFrameEndUserInfoKey] CGRectValue];
@@ -158,10 +229,10 @@
 }
 
 - (void)dealloc {
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIKeyboardWillHideNotification object:nil];
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIKeyboardWillShowNotification object:nil];
-    
+    [WKSDK.shared.chatManager removeDelegate:self];
     [self disconnect];
+    
+    NSLog(@"WKViewController dealloc...");
 }
 
 - (UITextField *)inputFd {
@@ -170,6 +241,7 @@
         _inputFd = [[UITextField alloc] initWithFrame:CGRectMake(5.0f,5.0f, self.view.frame.size.width - 5.0f*2, height)];
         _inputFd.placeholder = @"请输入消息";
         _inputFd.returnKeyType = UIReturnKeySend;
+        _inputFd.delegate = self;
     }
     return _inputFd;
 }
@@ -205,4 +277,25 @@
     return _toBtn;
 }
 
+#pragma mark -- UITextFieldDelegate
+
+- (BOOL)textFieldShouldReturn:(UITextField *)textField {
+    NSLog(@"send---->");
+    if(!self.toChannel) {
+        [self showSetting];
+        return YES;
+    }
+    NSString *msg = [textField.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    if([msg isEqualToString:@""]) {
+        return YES;
+    }
+    WKTextContent *content = [[WKTextContent alloc] initWithContent:msg];
+    WKMessage *message = [WKSDK.shared.chatManager sendMessage:content channel:self.toChannel];
+    [self.tableView sendMessageUI:message];
+    
+    
+    textField.text = @"";
+    
+    return YES;
+}
 @end

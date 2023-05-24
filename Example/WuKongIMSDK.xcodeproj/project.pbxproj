@@ -20,6 +20,9 @@
 		6003F5B2195388D20070C39A /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6003F591195388D20070C39A /* UIKit.framework */; };
 		6003F5BA195388D20070C39A /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 6003F5B8195388D20070C39A /* InfoPlist.strings */; };
 		6003F5BC195388D20070C39A /* Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 6003F5BB195388D20070C39A /* Tests.m */; };
+		712A363E2A1DA9AC001A13E2 /* WKTextCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 712A363D2A1DA9AC001A13E2 /* WKTextCell.m */; };
+		712A36412A1DC45A001A13E2 /* UIColor+WK.m in Sources */ = {isa = PBXBuildFile; fileRef = 712A36402A1DC459001A13E2 /* UIColor+WK.m */; };
+		712A36442A1DD5AD001A13E2 /* WKDatasource.m in Sources */ = {isa = PBXBuildFile; fileRef = 712A36432A1DD5AD001A13E2 /* WKDatasource.m */; };
 		71719F9F1E33DC2100824A3D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 71719F9D1E33DC2100824A3D /* LaunchScreen.storyboard */; };
 		717E77372A1CBAB60079EB5C /* WKLoginViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 717E77362A1CBAB60079EB5C /* WKLoginViewController.m */; };
 		717E773A2A1CBD1D0079EB5C /* WKAPIClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 717E77392A1CBD1D0079EB5C /* WKAPIClient.m */; };
@@ -64,6 +67,12 @@
 		6003F5B9195388D20070C39A /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		6003F5BB195388D20070C39A /* Tests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Tests.m; sourceTree = "<group>"; };
 		606FC2411953D9B200FFA9A0 /* Tests-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Tests-Prefix.pch"; sourceTree = "<group>"; };
+		712A363C2A1DA9AC001A13E2 /* WKTextCell.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WKTextCell.h; sourceTree = "<group>"; };
+		712A363D2A1DA9AC001A13E2 /* WKTextCell.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = WKTextCell.m; sourceTree = "<group>"; };
+		712A363F2A1DC459001A13E2 /* UIColor+WK.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "UIColor+WK.h"; sourceTree = "<group>"; };
+		712A36402A1DC459001A13E2 /* UIColor+WK.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UIColor+WK.m"; sourceTree = "<group>"; };
+		712A36422A1DD5AD001A13E2 /* WKDatasource.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WKDatasource.h; sourceTree = "<group>"; };
+		712A36432A1DD5AD001A13E2 /* WKDatasource.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = WKDatasource.m; sourceTree = "<group>"; };
 		71719F9E1E33DC2100824A3D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		717E77352A1CBAB60079EB5C /* WKLoginViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WKLoginViewController.h; sourceTree = "<group>"; };
 		717E77362A1CBAB60079EB5C /* WKLoginViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WKLoginViewController.m; sourceTree = "<group>"; };
@@ -155,6 +164,8 @@
 		6003F593195388D20070C39A /* Example for WuKongIMSDK */ = {
 			isa = PBXGroup;
 			children = (
+				712A363F2A1DC459001A13E2 /* UIColor+WK.h */,
+				712A36402A1DC459001A13E2 /* UIColor+WK.m */,
 				717E77352A1CBAB60079EB5C /* WKLoginViewController.h */,
 				717E77362A1CBAB60079EB5C /* WKLoginViewController.m */,
 				6003F59C195388D20070C39A /* WKAppDelegate.h */,
@@ -171,6 +182,10 @@
 				717E773C2A1CD95B0079EB5C /* WKMessageTableView.m */,
 				717E77412A1CF5D10079EB5C /* WKSettingView.h */,
 				717E77422A1CF5D10079EB5C /* WKSettingView.m */,
+				712A363C2A1DA9AC001A13E2 /* WKTextCell.h */,
+				712A363D2A1DA9AC001A13E2 /* WKTextCell.m */,
+				712A36422A1DD5AD001A13E2 /* WKDatasource.h */,
+				712A36432A1DD5AD001A13E2 /* WKDatasource.m */,
 			);
 			name = "Example for WuKongIMSDK";
 			path = WuKongIMSDK;
@@ -330,6 +345,7 @@
 				"${BUILT_PRODUCTS_DIR}/CocoaAsyncSocket/CocoaAsyncSocket.framework",
 				"${BUILT_PRODUCTS_DIR}/FMDB/FMDB.framework",
 				"${BUILT_PRODUCTS_DIR}/MBProgressHUD/MBProgressHUD.framework",
+				"${BUILT_PRODUCTS_DIR}/MJRefresh/MJRefresh.framework",
 				"${BUILT_PRODUCTS_DIR}/SQLCipher/SQLCipher.framework",
 				"${BUILT_PRODUCTS_DIR}/WuKongIMSDK/WuKongIMSDK.framework",
 			);
@@ -340,6 +356,7 @@
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/CocoaAsyncSocket.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/FMDB.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/MBProgressHUD.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/MJRefresh.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/SQLCipher.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/WuKongIMSDK.framework",
 			);
@@ -401,10 +418,13 @@
 			files = (
 				717E773A2A1CBD1D0079EB5C /* WKAPIClient.m in Sources */,
 				717E773D2A1CD95B0079EB5C /* WKMessageTableView.m in Sources */,
+				712A36442A1DD5AD001A13E2 /* WKDatasource.m in Sources */,
 				717E77372A1CBAB60079EB5C /* WKLoginViewController.m in Sources */,
 				6003F59E195388D20070C39A /* WKAppDelegate.m in Sources */,
 				6003F5A7195388D20070C39A /* WKViewController.m in Sources */,
 				717E77432A1CF5D10079EB5C /* WKSettingView.m in Sources */,
+				712A363E2A1DA9AC001A13E2 /* WKTextCell.m in Sources */,
+				712A36412A1DC45A001A13E2 /* UIColor+WK.m in Sources */,
 				6003F59A195388D20070C39A /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

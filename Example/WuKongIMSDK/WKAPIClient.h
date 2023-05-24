@@ -18,6 +18,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 -(void) GET:(NSString*)path parameters:(nullable id)parameters complete:(void(^)(id respose,NSError *error))complete;
 
+-(void) POST:(NSString*)path parameters:(id)parameters complete:(void(^)(id respose,NSError *error))complete;
+
 @end
 
 NS_ASSUME_NONNULL_END

@@ -80,6 +80,12 @@ typedef enum : NSInteger {
 } WKDeviceFlagEnum;
 
 
+typedef enum : NSUInteger {
+    WKPullModeDown,
+    WKPullModeUp,
+} WKPullMode;
+
+
 // cmd sign签名错误
 #define WKCMDSignError @"cmdSignError"
 

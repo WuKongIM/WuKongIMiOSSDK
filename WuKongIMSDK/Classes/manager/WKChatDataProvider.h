@@ -11,10 +11,11 @@
 
 #endif /* WKChatDataProvider_h */
 
+
 NS_ASSUME_NONNULL_BEGIN
 // 同步频道消息
 typedef void(^WKSyncChannelMessageCallback)(WKSyncChannelMessageModel* __nullable syncChannelMessageModel,NSError * __nullable error);
-typedef void (^WKSyncChannelMessageProvider)(WKChannel *channel,uint32_t minMessageSeq,uint32_t maxMessageSeq,NSInteger limit,bool reverse,WKSyncChannelMessageCallback callback);
+typedef void (^WKSyncChannelMessageProvider)(WKChannel *channel,uint32_t startMessageSeq,uint32_t endMessageSeq,NSInteger limit,WKPullMode pullMode,WKSyncChannelMessageCallback callback);
 
 // 扩展消息
 typedef void(^WKSyncMessageExtraCallback)(NSArray<WKMessageExtra*>* __nullable results,NSError * __nullable error);

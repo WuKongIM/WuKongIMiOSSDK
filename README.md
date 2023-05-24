@@ -1,29 +1,19 @@
-# WuKongIMSDK
+# WuKongIMiOSSDK
 
-[![CI Status](https://img.shields.io/travis/3895878/WuKongIMSDK.svg?style=flat)](https://travis-ci.org/3895878/WuKongIMSDK)
-[![Version](https://img.shields.io/cocoapods/v/WuKongIMSDK.svg?style=flat)](https://cocoapods.org/pods/WuKongIMSDK)
-[![License](https://img.shields.io/cocoapods/l/WuKongIMSDK.svg?style=flat)](https://cocoapods.org/pods/WuKongIMSDK)
-[![Platform](https://img.shields.io/cocoapods/p/WuKongIMSDK.svg?style=flat)](https://cocoapods.org/pods/WuKongIMSDK)
+## 说明
 
-## Example
+本项目是[悟空IM](https://github.com/WuKongIM/WuKongIM)端的iOS SDK。
 
-To run the example project, clone the repo, and run `pod install` from the Example directory first.
+## 运行
 
-## Requirements
+进入到项目Example目录内，执行 `pod install`，然后打开 `Example/WuKongIMSDK.xcworkspace` 运行即可。
 
-## Installation
 
-WuKongIMSDK is available through [CocoaPods](https://cocoapods.org). To install
-it, simply add the following line to your Podfile:
 
-```ruby
-pod 'WuKongIMSDK'
-```
+## 效果
 
-## Author
+![](./docs/screen1.png)
+![](./docs/screen2.png)
 
-3895878, tangtaoit@githubim.com
 
-## License
 
-WuKongIMSDK is available under the MIT license. See the LICENSE file for more info.
