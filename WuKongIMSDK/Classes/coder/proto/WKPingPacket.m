@@ -20,22 +20,9 @@
 }
 
 - (NSData *)encode:(WKPingPacket *)packet {
-    if([WKSDK shared].options.proto == WK_PROTO_MOS) {
-       return [self encodeMOS:packet];
-    }
+   
     return nil;
 }
--(NSData*) encodeMOS:(WKPingPacket*)packet {
-    WKDataWrite  *writer = [WKDataWrite initLittleEndian];
-    
-    // login type
-    [writer writeUint8:1];
-    
-    // uid
-    unsigned long long  uid = strtoull([[WKSDK shared].options.connectInfo.uid UTF8String],NULL,0);
-    [writer writeUint64:uid];
-    
-    return [writer toData];
-}
+
 
 @end

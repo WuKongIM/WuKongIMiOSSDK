@@ -18,6 +18,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property(nonatomic,assign) BOOL topic; // 是否存在话题
 
+@property(nonatomic,assign) BOOL streamOn; // 是否开启流式消息
 
 
 -(uint8_t) toUint8;

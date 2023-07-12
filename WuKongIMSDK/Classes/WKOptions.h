@@ -34,8 +34,6 @@ typedef WKConnectInfo*_Nonnull(^WKConnectInfoCallback)(void);
 @property(nonatomic,assign) uint16_t port;
 
 
-/// IM模式
-@property(nonatomic,assign) WKMode mode;
 /**
  连接信息回调
  */
@@ -129,7 +127,6 @@ typedef WKConnectInfo*_Nonnull(^WKConnectInfoCallback)(void);
 /// 协议类型
 @property(nonatomic,assign) WKProto proto;
 
-@property(nonatomic,assign) BOOL mosConvertOn; // 是否开启mos的content转换（临时参数）
 
 @property(nonatomic,assign) NSInteger messageExtraSyncLimit; // 同步扩展消息每次数量限制
 

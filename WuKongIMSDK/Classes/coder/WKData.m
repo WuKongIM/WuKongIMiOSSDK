@@ -215,10 +215,6 @@
 }
 
 +(void) numberHNMemcpy:(void*)dest src:(const void *)src count:(unsigned int)count {
-    if([WKSDK shared].options.proto == WK_PROTO_MOS) {
-        memcpy(dest,src,count);
-        return;
-    }
     if(count == 8)
     {
         unsigned long long ll;

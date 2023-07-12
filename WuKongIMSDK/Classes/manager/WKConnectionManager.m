@@ -262,65 +262,7 @@ static dispatch_queue_t _imsocketQueue;
          return;
     });
 }
-//
-//// 拉取离线消息
-//-(void) pullOfflineMessages:(void(^)(NSError *error)) finish {
-//    if(![WKSDK shared].options.hasLogin) {
-//        finish([NSError errorWithDomain:@"未登录" code:0 userInfo:nil]);
-//        return;
-//    }
-//    if(![WKSDK shared].offlineMessagePull) {
-//        NSLog(@"警告：离线消息提供者没有设置！[WKSDK setOfflineMessageProvider:(WKOfflineMessagePull) offlineMessageCallback offlineMessagesAck:(WKOfflineMessageAck) offlineMessageAckCallback]");
-//        finish([NSError errorWithDomain:@"警告：离线消息提供者没有设置！" code:0 userInfo:nil]);
-//        return;
-//    }
-//    // 获取消息表里的最大messageSeq
-//    uint32_t maxMessageSeq = [[WKMessageDB shared] getMaxMessageSeq];
-//    __weak typeof(self) weakSelf = self;
-//    [WKSDK shared].offlineMessagePull((int)[WKSDK shared].options.offlineMessageLimit, maxMessageSeq, ^(NSArray<WKMessage *> * _Nullable messages, bool more,NSError *error) {
-//        if(error) {
-//            // 如果拉取离线消息发生错误 则休息3秒再拉取
-//            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 3.0 * NSEC_PER_SEC), dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void){
-//                [self pullOfflineMessages:finish];
-//            });
-//            return;
-//        }
-//        if(!messages || messages.count<=0) { // 如果没有拉取到离线消息，完成离线拉取
-//            if([WKSDK shared].isDebug) {
-//                NSLog(@"离线拉取完成！");
-//            }
-//           [self finishedPullOffline];
-//           finish(nil);
-//            return;
-//        }
-//        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
-//            NSArray<WKMessage*> *newMessages = [messages copy];
-//            // 处理消息
-//            [[WKSDK shared].chatManager handleMessages:newMessages];
-//            // 离线消息ack回执
-//            [WKSDK shared].offlineMessageAck(newMessages[newMessages.count-1].messageSeq,^(NSError *error){
-//                if(error) {
-//                    NSLog(@"WARN: 离线ack失败！-> %@",error);
-//                    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 3.0 * NSEC_PER_SEC), dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void){
-//                        [self pullOfflineMessages:finish];
-//                    });
-//                }else {
-//                    if(more) {
-//                        [weakSelf pullOfflineMessages:finish];
-//                    }else {
-//                        if([WKSDK shared].isDebug) {
-//                            NSLog(@"离线拉取完成！");
-//                        }
-//                        [self finishedPullOffline];
-//                        finish(nil);
-//                    }
-//                }
-//
-//            });
-//        });
-//    });
-//
-//}
+
 
 // 完成同步会话
 -(void) finishedSyncConversation {
@@ -590,47 +532,7 @@ static dispatch_queue_t _imsocketQueue;
 }
 
 -(NSMutableData*) unpackOne:(NSMutableData*)packData callback:(void(^) (NSData *data))callback {
-    if([WKSDK shared].options.proto == WK_PROTO_MOS) {
-        return [self unpackOneMOS:packData callback:callback];
-    }else {
-       return [self unpackOneLM:packData callback:callback];
-    }
-}
-
--(NSMutableData*) unpackOneMOS:(NSMutableData*)packData callback:(void(^) (NSData *data))callback {
-    NSUInteger length  = [packData length];
-    int startByteLength =1;
-    int bodyByteLength =4;
-    
-    int i=0;
-    for (i = 0; i < length; i = i + 1) {
-        if (length < i+startByteLength+bodyByteLength) {
-            break;
-        }
-         int start = 0;
-        [WKDataRead numberHNMemcpy:&start src:[[packData subdataWithRange:NSMakeRange(i, 1)] bytes] count:1];
-        if (start == 2) {
-            unsigned int messageLength;
-            [WKDataRead numberHNMemcpy:&messageLength src:[[packData subdataWithRange:NSMakeRange(i+startByteLength, bodyByteLength)] bytes] count:4];
-            
-            if (length < i+16+messageLength) {
-                break;
-            }
-            NSData *depackData = [packData subdataWithRange:NSMakeRange(i, 16+messageLength)];
-            callback(depackData);
-            i = i+16+messageLength-1;
-            continue;
-        }
-    }
-    if (i == length) {
-        return [[NSMutableData alloc] init];
-    }
-    NSLog(@"-------有尾包-------");
-    
-    NSMutableData *data =[[NSMutableData alloc] initWithData:[packData subdataWithRange:NSMakeRange(i, length-i)]];
-    NSLog(@"尾包:%@",data);
-    
-    return data;
+    return [self unpackOneLM:packData callback:callback];
 }
 
 // 解包
@@ -731,11 +633,9 @@ static dispatch_queue_t _imsocketQueue;
             [packets addObject:packet];
         }
     }
-    if([WKSDK shared].options.proto != WK_PROTO_MOS) {
-        if(!self.pullOfflineFinished) { // 如果拉取消息未完成，则在线消息都存临时数组里
-            [self.tempPackets addObjectsFromArray:packets];
-            return;
-        }
+    if(!self.pullOfflineFinished) { // 如果拉取消息未完成，则在线消息都存临时数组里
+        [self.tempPackets addObjectsFromArray:packets];
+        return;
     }
    
     if(self.tempPackets.count>0) {

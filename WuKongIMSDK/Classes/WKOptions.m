@@ -29,14 +29,13 @@
        
        
        self.offlineMessageLimit = 300;
-       self.protoVersion = 0x5;
-       self.proto = WK_PROTO_WKAO;
+       self.protoVersion = 0x2;
+       self.proto = WK_PROTO_WK;
        self.messageFileRootDir =[[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject] stringByAppendingPathComponent:@"files"];
        self.dbPrefix = WK_DB_Prefix;
        self.dbDir = [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject] stringByAppendingPathComponent:@"wukongimdb"];
        self.imageMaxBytes =  1024 * 100; // 100k 缩略图最大大小
        self.syncChannelMessageLimit = 50;
-       self.mosConvertOn = false;
        
        self.messageExtraSyncLimit = 100;
        

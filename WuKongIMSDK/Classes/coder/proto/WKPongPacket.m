@@ -15,9 +15,7 @@
 }
 
 - (WKPacket *)decode:(NSData *)body header:(WKHeader *)header {
-    if([WKSDK shared].options.proto == WK_PROTO_MOS) {
-       return [self decodeMOS:body header:header];
-    }
+    
     return nil;
 }
 
@@ -26,10 +24,6 @@
 }
 
 
--(WKPacket*) decodeMOS:(NSData*) body header:(WKHeader*)header {
-    WKPongPacket *packet = [WKPongPacket new];
-    return packet;
-}
 
 - (NSString *)description{
     

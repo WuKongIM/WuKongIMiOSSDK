@@ -97,12 +97,7 @@ static WKRetryManager *_instance;
 }
 
 -(NSString*) getKey:(WKMessage*)message {
-    NSString *key=@"";
-    if([WKSDK shared].options.proto == WK_PROTO_WKAO) {
-        key = [NSString stringWithFormat:@"%u",message.clientSeq];
-    }else {
-         key = message.clientMsgNo;
-    }
+    NSString *key=[NSString stringWithFormat:@"%u",message.clientSeq];
     return key;
 }
 

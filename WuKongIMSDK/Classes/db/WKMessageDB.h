@@ -289,6 +289,13 @@ NS_ASSUME_NONNULL_BEGIN
 -(uint32_t) getChannelAroundFirstMessageSeq:(WKChannel*)channel messageSeq:(uint32_t)messageSeq;
 
 -(WKMessageContent*) decodeContent:(NSInteger)contentType data:(NSData *)contentData db:(FMDatabase*)db;
+
+// 保存流
+-(void) saveOrUpdateStreams:(NSArray<WKStream*>*)streams;
+
+// 获取流
+-(NSArray<WKStream*>*) getStreams:(NSString*)streamNo;
+
 @end
 
 NS_ASSUME_NONNULL_END

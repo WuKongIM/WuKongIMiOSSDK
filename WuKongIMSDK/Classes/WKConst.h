@@ -66,8 +66,7 @@ typedef enum : uint8_t {
 
 // 协议类型
 typedef enum : NSUInteger {
-    WK_PROTO_WKAO,
-    WK_PROTO_MOS
+    WK_PROTO_WK,
 } WKProto;
 
 

@@ -13,7 +13,7 @@
 #import "WKReactionDB.h"
 #import "WKUnknownContent.h"
 // 保存消息
-#define SQL_MESSAGE_SAVE [NSString stringWithFormat:@"insert into %@(message_id,message_seq,order_seq,client_msg_no,timestamp,from_uid,to_uid,channel_id,channel_type,content_type,content,searchable_word,voice_readed,status,reason_code,extra,setting,flame,flame_second,viewed,viewed_at,is_deleted) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",TB_MESSAGE]
+#define SQL_MESSAGE_SAVE [NSString stringWithFormat:@"insert into %@(message_id,message_seq,order_seq,client_msg_no,stream_no,timestamp,from_uid,to_uid,channel_id,channel_type,content_type,content,searchable_word,voice_readed,status,reason_code,extra,setting,flame,flame_second,viewed,viewed_at,is_deleted) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",TB_MESSAGE]
 
 // 保存或更新消息
 //#define SQL_MESSAGE_REPLACE [NSString stringWithFormat:@"insert into %@(message_id,message_seq,order_seq,client_msg_no,timestamp,from_uid,to_uid,channel_id,channel_type,content_type,content,searchable_word,voice_readed,status,extra,revoke,is_deleted) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(client_msg_no) DO UPDATE SET voice_readed=excluded.voice_readed,status=excluded.status",TB_MESSAGE]
@@ -157,9 +157,10 @@
 // 查询所有消息
 #define SQL_ALL_MESSAGE [NSString stringWithFormat:@"select * from %@ where  content_type<>99 and message_seq>? and is_deleted=0 order by message_seq desc",TB_MESSAGE]
 
-//#define SQL_MESSAGE_INSERT_IF_EXIST @"insert into %@ (message_id,message_seq,client_msg_no,timestamp,from_uid,to_uid,channel_id,channel_type,content_type,content,searchable_word,status,extra) select ?,?,?,?,?,?,?,?,?,?,?,?,? from dual where NOT EXISTS (SELECT id FROM %@ WHERE message_id=? || (client_msg_no<>'' and client_msg_no=?))"
-
-
+// 保存流
+#define SQL_STREAM_SAVE_OR_UPDATE [NSString stringWithFormat:@"insert into %@(channel_id,channel_type,client_msg_no,stream_no,stream_seq,content) values(?,?,?,?,?,?) ON CONFLICT(channel_id,channel_type,stream_no,stream_seq) DO UPDATE SET content=excluded.content",TB_STREAM]
+// 查询流
+#define SQL_STREAM_WITH_STREAM_NO [NSString stringWithFormat:@"select * from %@ where stream_no=? order by stream_seq asc",TB_STREAM]
 
 
 @implementation WKMessageDB
@@ -186,58 +187,52 @@ static WKMessageDB *_instance;
     __block NSMutableArray<WKMessage*> *newMessages = [NSMutableArray array];
     @synchronized(self) {
         [[WKDB sharedDB].dbQueue inTransaction:^(FMDatabase * _Nonnull db, BOOL * _Nonnull rollback) {
-                for(WKMessage *message in messages) {
-                    WKMessage *existMessage = [self getMessageWithMessageIdOrClientMsgNo:message.messageId clientMsgNo:message.clientMsgNo db:db];
-                    if(existMessage) {
-                        if(existMessage.messageSeq==message.messageSeq) {
-                            if([WKSDK shared].isDebug) {
-                                NSLog(@"消息已存在 -> %llu messageSeq: %u",message.messageId,message.messageSeq);
-                            }
-                        }else {
-                            [self insertMessage:message db:db clientMsgNo:[NSString stringWithFormat:@"%@-%u",message.clientMsgNo,message.messageSeq] isDeleted:1];
-                            message.isDeleted = 1;
+            for(WKMessage *message in messages) {
+                WKMessage *existMessage = [self getMessageWithMessageIdOrClientMsgNo:message.messageId clientMsgNo:message.clientMsgNo db:db];
+                if(existMessage) {
+                    if(existMessage.messageSeq==message.messageSeq) {
+                        if([WKSDK shared].isDebug) {
+                            NSLog(@"消息已存在 -> %llu messageSeq: %u",message.messageId,message.messageSeq);
                         }
-                        continue;
-                    }
-                    
-                    [newMessages addObject:message];
-                    NSString *searchableWord = @"";
-                    if(message.content && message.content.searchableWord) {
-                        searchableWord =message.content.searchableWord;
-                    }
-                    if(message.remoteExtra.contentEdit && message.remoteExtra.contentEdit.searchableWord) { // 如果有编辑的内容 则以编辑的内容搜索关键字为准
-                        searchableWord =message.remoteExtra.contentEdit.searchableWord;
-                    }
-                    uint32_t orderSeq = 0;
-                    if([WKSDK shared].options.proto == WK_PROTO_MOS) {
-                        if(message.timestamp!=0) {
-                            orderSeq = (uint32_t)message.timestamp;
-                        }else{
-                            orderSeq = [[NSDate date] timeIntervalSince1970];
-                        }
-                       
                     }else {
-                        if(message.messageSeq!=0) {
-                            orderSeq = message.messageSeq*WKOrderSeqFactor;
-                        }else{
-                            orderSeq = [self getMaxOrderSeqWithChannel:db channel:message.channel]+1;
-                        }
+                        [self insertMessage:message db:db clientMsgNo:[NSString stringWithFormat:@"%@-%u",message.clientMsgNo,message.messageSeq] isDeleted:1];
+                        message.isDeleted = 1;
                     }
-                    bool success =  [db executeUpdate:SQL_MESSAGE_SAVE,@(message.messageId),@(message.messageSeq),@(orderSeq),message.clientMsgNo?:@"",@(message.timestamp),message.fromUid?:@"",message.toUid?:@"",message.channel.channelId?:@"",@(message.channel.channelType),@(message.content.realContentType),message.contentData?:@"",searchableWord?:@"",@(message.voiceReaded),@(message.status),@(message.reasonCode),[self extraToStr:message.extra],@([message.setting toUint8]),@(message.content.flame),@(message.content.flameSecond),@(message.viewed),@(message.viewedAt),@(message.isDeleted)];
-                    
-                    if(success) {
-                        message.clientSeq = (uint32_t)db.lastInsertRowId;
-                        message.orderSeq = orderSeq;
-                    }
-                    if(message.hasRemoteExtra) { // 添加扩展消息
-                        [[WKMessageExtraDB shared] addOrUpdateMessageExtra:message.remoteExtra db:db];
-                    }
-                    if(message.reactions && message.reactions.count>0) {
-                        [[WKReactionDB shared] insertOrUpdateReactions:message.reactions db:db];
-                    }
-                    
+                    continue;
                 }
-            }];
+                
+                [newMessages addObject:message];
+                NSString *searchableWord = @"";
+                if(message.content && message.content.searchableWord) {
+                    searchableWord =message.content.searchableWord;
+                }
+                if(message.remoteExtra.contentEdit && message.remoteExtra.contentEdit.searchableWord) { // 如果有编辑的内容 则以编辑的内容搜索关键字为准
+                    searchableWord =message.remoteExtra.contentEdit.searchableWord;
+                }
+                uint32_t orderSeq = 0;
+                if(message.messageSeq!=0) {
+                    orderSeq = message.messageSeq*WKOrderSeqFactor;
+                }else{
+                    orderSeq = [self getMaxOrderSeqWithChannel:db channel:message.channel]+1;
+                }
+                bool success =  [db executeUpdate:SQL_MESSAGE_SAVE,@(message.messageId),@(message.messageSeq),@(orderSeq),message.clientMsgNo?:@"",message.streamNo?:@"",@(message.timestamp),message.fromUid?:@"",message.toUid?:@"",message.channel.channelId?:@"",@(message.channel.channelType),@(message.content.realContentType),message.contentData?:@"",searchableWord?:@"",@(message.voiceReaded),@(message.status),@(message.reasonCode),[self extraToStr:message.extra],@([message.setting toUint8]),@(message.content.flame),@(message.content.flameSecond),@(message.viewed),@(message.viewedAt),@(message.isDeleted)];
+                
+                if(success) {
+                    message.clientSeq = (uint32_t)db.lastInsertRowId;
+                    message.orderSeq = orderSeq;
+                }
+                if(message.hasRemoteExtra) { // 添加扩展消息
+                    [[WKMessageExtraDB shared] addOrUpdateMessageExtra:message.remoteExtra db:db];
+                }
+                if(message.reactions && message.reactions.count>0) {
+                    [[WKReactionDB shared] insertOrUpdateReactions:message.reactions db:db];
+                }
+                if(message.streams && message.streams.count>0) {
+                    [self saveOrUpdateStreams:message.streams db:db];
+                }
+                
+            }
+        }];
     }
     
     return newMessages;
@@ -251,12 +246,8 @@ static WKMessageDB *_instance;
                 searchableWord =message.content.searchableWord;
             }
             uint32_t orderSeq = 0;
-            if([WKSDK shared].options.proto == WK_PROTO_MOS) {
-                orderSeq = (uint32_t)message.timestamp;
-            }else {
-                if(message.messageSeq!=0) {
-                    orderSeq = message.messageSeq*WKOrderSeqFactor;
-                }
+            if(message.messageSeq!=0) {
+                orderSeq = message.messageSeq*WKOrderSeqFactor;
             }
             bool success = [self insertMessage:message db:db clientMsgNo:message.clientMsgNo isDeleted:message.isDeleted];
             if(success) {
@@ -277,6 +268,9 @@ static WKMessageDB *_instance;
             if(message.reactions && message.reactions.count>0) {
                 [[WKReactionDB shared] insertOrUpdateReactions:message.reactions db:db];
             }
+            if(message.streams && message.streams.count>0) {
+                [self saveOrUpdateStreams:message.streams db:db];
+            }
         }
     }];
     return messages;
@@ -293,15 +287,11 @@ static WKMessageDB *_instance;
         searchableWord =message.remoteExtra.contentEdit.searchableWord;
     }
     uint32_t orderSeq = 0;
-    if([WKSDK shared].options.proto == WK_PROTO_MOS) {
-        orderSeq = (uint32_t)message.timestamp;
-    }else {
-        if(message.messageSeq!=0) {
-            orderSeq = message.messageSeq*WKOrderSeqFactor;
-        }
+    if(message.messageSeq!=0) {
+        orderSeq = message.messageSeq*WKOrderSeqFactor;
     }
     
-    return  [db executeUpdate:SQL_MESSAGE_SAVE,@(message.messageId),@(message.messageSeq),@(orderSeq),clientMsgNo,@(message.timestamp),message.fromUid?:@"",message.toUid?:@"",message.channel.channelId?:@"",@(message.channel.channelType),@(message.content.realContentType),message.contentData?:@"",searchableWord?:@"",@(message.voiceReaded),@(message.status),@(message.reasonCode),[self extraToStr:message.extra],@([message.setting toUint8]),@(message.content.flame),@(message.content.flameSecond),@(message.viewed),@(message.viewedAt),@(isDeleted)];
+    return  [db executeUpdate:SQL_MESSAGE_SAVE,@(message.messageId),@(message.messageSeq),@(orderSeq),clientMsgNo,message.streamNo?:@"",@(message.timestamp),message.fromUid?:@"",message.toUid?:@"",message.channel.channelId?:@"",@(message.channel.channelType),@(message.content.realContentType),message.contentData?:@"",searchableWord?:@"",@(message.voiceReaded),@(message.status),@(message.reasonCode),[self extraToStr:message.extra],@([message.setting toUint8]),@(message.content.flame),@(message.content.flameSecond),@(message.viewed),@(message.viewedAt),@(isDeleted)];
 }
 
 -(BOOL) existMessage:(uint64_t)messageId db:(FMDatabase*)db{
@@ -316,50 +306,50 @@ static WKMessageDB *_instance;
 }
 -(NSArray<WKMessage*>*) getMessages:(WKChannel*)channel startOrderSeq:(uint32_t)startOrderSeq endOrderSeq:(uint32_t)endOrderSeq  limit:(int) limit pullMode:(WKPullMode)pullMode {
     __block NSMutableArray *messages = [NSMutableArray new];
-        [[WKDB sharedDB].dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
-            FMResultSet *result;
-            if(startOrderSeq==0 && endOrderSeq == 0) {
-                result = [db executeQuery:SQL_MESSAGE_QUERY(@"desc"),channel.channelId?:@"",@(channel.channelType),@(limit)];
-            }else {
-                NSString *symbol1;
-                NSString *symbol2;
-                if(pullMode == WKPullModeDown) {
-                    if(startOrderSeq>0 && endOrderSeq == 0) {
-                        symbol1 = @"<";
-                    }else {
-                        symbol1 = @"<";
-                        symbol2 = @">";
-                    }
-                    
-                    if(!symbol2) {
-                        result = [db executeQuery:SQL_MESSAGE_QUERY_OLDESTID_DESC(symbol1,nil),channel.channelId?:@"",@(channel.channelType),@(startOrderSeq),@(limit)];
-                    }else{
-                        result = [db executeQuery:SQL_MESSAGE_QUERY_OLDESTID_DESC(symbol1,symbol2),channel.channelId?:@"",@(channel.channelType),@(startOrderSeq),@(endOrderSeq),@(limit)];
-                    }
-                   
+    [[WKDB sharedDB].dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        FMResultSet *result;
+        if(startOrderSeq==0 && endOrderSeq == 0) {
+            result = [db executeQuery:SQL_MESSAGE_QUERY(@"desc"),channel.channelId?:@"",@(channel.channelType),@(limit)];
+        }else {
+            NSString *symbol1;
+            NSString *symbol2;
+            if(pullMode == WKPullModeDown) {
+                if(startOrderSeq>0 && endOrderSeq == 0) {
+                    symbol1 = @"<";
                 }else {
-                    if(startOrderSeq>0 && endOrderSeq == 0) {
-                        symbol1 = @">";
-                    }else {
-                        symbol1 = @">";
-                        symbol2 = @"<";
-                    }
-                    
-                    if(!symbol2) {
-                        result = [db executeQuery:SQL_MESSAGE_QUERY_OLDESTID_ASC(symbol1,nil),channel.channelId?:@"",@(channel.channelType),@(startOrderSeq),@(limit)];
-                    }else {
-                        result = [db executeQuery:SQL_MESSAGE_QUERY_OLDESTID_ASC(symbol1,symbol2),channel.channelId?:@"",@(channel.channelType),@(startOrderSeq),@(endOrderSeq),@(limit)];
-                    }
-                    
-                   
+                    symbol1 = @"<";
+                    symbol2 = @">";
                 }
+                
+                if(!symbol2) {
+                    result = [db executeQuery:SQL_MESSAGE_QUERY_OLDESTID_DESC(symbol1,nil),channel.channelId?:@"",@(channel.channelType),@(startOrderSeq),@(limit)];
+                }else{
+                    result = [db executeQuery:SQL_MESSAGE_QUERY_OLDESTID_DESC(symbol1,symbol2),channel.channelId?:@"",@(channel.channelType),@(startOrderSeq),@(endOrderSeq),@(limit)];
+                }
+                
+            }else {
+                if(startOrderSeq>0 && endOrderSeq == 0) {
+                    symbol1 = @">";
+                }else {
+                    symbol1 = @">";
+                    symbol2 = @"<";
+                }
+                
+                if(!symbol2) {
+                    result = [db executeQuery:SQL_MESSAGE_QUERY_OLDESTID_ASC(symbol1,nil),channel.channelId?:@"",@(channel.channelType),@(startOrderSeq),@(limit)];
+                }else {
+                    result = [db executeQuery:SQL_MESSAGE_QUERY_OLDESTID_ASC(symbol1,symbol2),channel.channelId?:@"",@(channel.channelType),@(startOrderSeq),@(endOrderSeq),@(limit)];
+                }
+                
+                
             }
-            while (result.next) {
-                NSDictionary *resultDic = result.resultDictionary;
-                [messages addObject:[self toMessage:resultDic db:db]];
-            }
-            [result close];
-        }];
+        }
+        while (result.next) {
+            NSDictionary *resultDic = result.resultDictionary;
+            [messages addObject:[self toMessage:resultDic db:db]];
+        }
+        [result close];
+    }];
     return messages;
 }
 
@@ -368,7 +358,7 @@ static WKMessageDB *_instance;
 //}
 
 -(NSArray<WKMessage*>*) getMessages:(WKChannel*)channel keyword:(NSString*)keyword limit:(int) limit {
-     __block NSMutableArray *messages = [NSMutableArray new];
+    __block NSMutableArray *messages = [NSMutableArray new];
     [[WKDB sharedDB].dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
         FMResultSet *result = [db executeQuery:SQL_MESSAGE_WITH_CHANNEL_AND_KEYWORD,channel.channelId,@(channel.channelType),[NSString stringWithFormat:@"%%%@%%",keyword?:@""],@(limit)];
         while (result.next) {
@@ -382,15 +372,15 @@ static WKMessageDB *_instance;
 
 -(NSArray<WKMessage*>*) getMessages:(uint32_t)messageSeq limit:(int)limit {
     __block NSMutableArray *messages = [NSMutableArray new];
-   [[WKDB sharedDB].dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
-       FMResultSet *result = [db executeQuery:SQL_ALL_MESSAGE,@(messageSeq),@(limit)];
-       while (result.next) {
-           NSDictionary *resultDic = result.resultDictionary;
-           [messages addObject:[self toMessage:resultDic db:db]];
-       }
-       [result close];
-   }];
-   return messages;
+    [[WKDB sharedDB].dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        FMResultSet *result = [db executeQuery:SQL_ALL_MESSAGE,@(messageSeq),@(limit)];
+        while (result.next) {
+            NSDictionary *resultDic = result.resultDictionary;
+            [messages addObject:[self toMessage:resultDic db:db]];
+        }
+        [result close];
+    }];
+    return messages;
 }
 
 -(NSArray<WKMessage*>*) getDeletedMessagesWithChannel:(WKChannel*)channel minMessageSeq:(uint32_t)minMessageSeq maxMessageSeq:(uint32_t)maxMessageSeq {
@@ -518,7 +508,7 @@ static WKMessageDB *_instance;
 -(WKMessage*) getMessageWithClientMsgNo:(NSString*)clientMsgNo {
     __block WKMessage *message;
     [[WKDB sharedDB].dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
-         FMResultSet *result = [db executeQuery:SQL_MESSAGE_WITH_CLIENTMSGNO,clientMsgNo];
+        FMResultSet *result = [db executeQuery:SQL_MESSAGE_WITH_CLIENTMSGNO,clientMsgNo];
         if(result.next) {
             message = [self toMessage:result.resultDictionary db:db];
         }
@@ -530,7 +520,7 @@ static WKMessageDB *_instance;
 -(long long) getMessageMaxID {
     __block long long maxID = 0;
     [[WKDB sharedDB].dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
-         FMResultSet *result = [db executeQuery:SQL_MESSAGE_MAX_ID];
+        FMResultSet *result = [db executeQuery:SQL_MESSAGE_MAX_ID];
         if(result.next) {
             maxID = [result longLongIntForColumnIndex:0];
         }
@@ -542,9 +532,9 @@ static WKMessageDB *_instance;
 -(WKMessage*) getMessageWithClientMsgNo:(NSString*)clientMsgNo db:(FMDatabase*)db{
     __block WKMessage *message;
     FMResultSet *result = [db executeQuery:SQL_MESSAGE_WITH_CLIENTMSGNO,clientMsgNo];
-   if(result.next) {
-       message = [self toMessage:result.resultDictionary db:db];
-   }
+    if(result.next) {
+        message = [self toMessage:result.resultDictionary db:db];
+    }
     [result close];
     return message;
 }
@@ -643,7 +633,7 @@ static WKMessageDB *_instance;
         }
         [resultSet close];
     }];
-     return message;
+    return message;
 }
 
 -(WKMessage*) getMessageWithMessageId:(uint64_t)messageId db:(FMDatabase*)db {
@@ -674,7 +664,7 @@ static WKMessageDB *_instance;
 }
 
 -(void) updateMessageMaxSeqWithMessageIDOrClientMsgNo:(uint32_t)messageSeq messageID:(uint64_t)messageID clientMsgNo:(NSString*)clientMsgNo db:(FMDatabase*)db{
-     [db executeUpdate:SQL_MESSAGE_UPDATE_MAX_SEQ_WITH_MESSAGEID_OR_CLIENTMSGNO,@(messageSeq),@(messageSeq*WKOrderSeqFactor),@(messageID),clientMsgNo?:@""];
+    [db executeUpdate:SQL_MESSAGE_UPDATE_MAX_SEQ_WITH_MESSAGEID_OR_CLIENTMSGNO,@(messageSeq),@(messageSeq*WKOrderSeqFactor),@(messageID),clientMsgNo?:@""];
 }
 
 -(void) updateMessageWithSendackPackets:(NSArray<WKSendackPacket*> *)sendackPackets {
@@ -701,9 +691,9 @@ static WKMessageDB *_instance;
                 
             }
             [db executeUpdate:SQL_MESSAGE_UPDATE_WITHACK,@(sendackPacket.messageId),@(sendackPacket.messageSeq),@(orderSeq),@(status),@(sendackPacket.reasonCode),@(sendackPacket.clientSeq)];
-             
+            
         }
-       
+        
     }];
 }
 
@@ -735,25 +725,25 @@ static WKMessageDB *_instance;
 -(uint32_t) getMaxMessageSeqWithChannel:(FMDatabase*)db channel:(WKChannel*)channel {
     uint32_t maxMessageSeq = 0;
     FMResultSet *resultSet = [db executeQuery:SQL_MESSAGE_MAX_MESSAGESEQ_WITH_CHANNEL,channel.channelId?:@"",@(channel.channelType)];
-     if(resultSet.next) {
+    if(resultSet.next) {
         maxMessageSeq =  (uint32_t)[resultSet unsignedLongLongIntForColumn:@"message_seq"];
-     }
-     [resultSet close];
+    }
+    [resultSet close];
     return maxMessageSeq;
 }
 
 -(uint32_t) getMaxOrderSeqWithChannel:(FMDatabase*) db channel:(WKChannel*)channel {
     uint32_t maxOrderSeq = 0;
     FMResultSet *resultSet = [db executeQuery:SQL_MESSAGE_MAX_ORDERSEQ,channel.channelId?:@"",@(channel.channelType)];
-     if(resultSet.next) {
-         maxOrderSeq =  (uint32_t)[resultSet unsignedLongLongIntForColumn:@"order_seq"];
-     }
-     [resultSet close];
+    if(resultSet.next) {
+        maxOrderSeq =  (uint32_t)[resultSet unsignedLongLongIntForColumn:@"order_seq"];
+    }
+    [resultSet close];
     return maxOrderSeq;
 }
 
 - (void)deleteMessage:(WKMessage *)message {
-
+    
     uint32_t clientSeq = message.clientSeq;
     [[WKDB sharedDB].dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
         [db executeUpdate:SQL_MESSAGE_DELETE_CLIENT_SEQ,@(clientSeq)];
@@ -761,7 +751,7 @@ static WKMessageDB *_instance;
 }
 
 - (void)destoryMessage:(WKMessage *)message {
-   
+    
     [[WKDB sharedDB].dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
         [db executeUpdate:SQL_MESSAGE_DESTORY_ID,@(message.clientSeq)];
     }];
@@ -809,9 +799,9 @@ static WKMessageDB *_instance;
 -(WKMessage*) getLastMessage:(WKChannel*)channel {
     __block WKMessage *message;
     [[WKDB sharedDB].dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
-       FMResultSet *resultSet = [db executeQuery:SQL_MESSAGE_LASTMESSAGE_WITH_CHANNEL,channel.channelId?:@"",@(channel.channelType)];
+        FMResultSet *resultSet = [db executeQuery:SQL_MESSAGE_LASTMESSAGE_WITH_CHANNEL,channel.channelId?:@"",@(channel.channelType)];
         if(resultSet.next) {
-             NSDictionary *resultDic = resultSet.resultDictionary;
+            NSDictionary *resultDic = resultSet.resultDictionary;
             message = [self toMessage:resultDic db:db];
         }
         [resultSet close];
@@ -842,7 +832,7 @@ static WKMessageDB *_instance;
     [[WKDB sharedDB].dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
         FMResultSet *resultSet = [db executeQuery:SQL_MESSAGES_WITH_STATUS,@(WK_MESSAGE_WAITSEND)];
         while(resultSet.next) {
-             NSDictionary *resultDic = resultSet.resultDictionary;
+            NSDictionary *resultDic = resultSet.resultDictionary;
             [messages addObject:[self toMessage:resultDic db:db]];
         }
         [resultSet close];
@@ -883,7 +873,7 @@ static WKMessageDB *_instance;
 
 // 获取需要焚烧的消息
 -(NSArray<WKMessage*>*) getMessagesOfNeedFlame {
-   __block NSArray<WKMessage*> *messages = [NSArray new];
+    __block NSArray<WKMessage*> *messages = [NSArray new];
     [[WKDB sharedDB].dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
         NSMutableArray<NSString*> *clientMsgNos = [NSMutableArray array];
         FMResultSet *resultSet = [db executeQuery:SQL_MESSAGE_VIEWED_NEED_DELETE,@([[NSDate date] timeIntervalSince1970])];
@@ -902,7 +892,7 @@ static WKMessageDB *_instance;
 -(NSInteger) getOrderCountMoreThanMessage:(WKMessage*)message {
     __block NSInteger count;
     [[WKDB sharedDB].dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
-       FMResultSet *resultSet = [db executeQuery:SQL_MESSAGE_ORDER_COUNT_WITH_MORE_THAN_ORDER_SEQ,message.channel.channelId?:@"",@(message.channel.channelType),@(message.orderSeq)];
+        FMResultSet *resultSet = [db executeQuery:SQL_MESSAGE_ORDER_COUNT_WITH_MORE_THAN_ORDER_SEQ,message.channel.channelId?:@"",@(message.channel.channelType),@(message.orderSeq)];
         if(resultSet.next) {
             count = [resultSet intForColumn:@"cn"];
         }
@@ -923,7 +913,7 @@ static WKMessageDB *_instance;
 -(long long) getMessageExtraMaxVersion:(WKChannel*)channel {
     __block long long maxVersion;
     [[WKDB sharedDB].dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
-       FMResultSet *resultSet = [db executeQuery:SQL_MESSAGE_EXTRA_MAX_VERSION,channel.channelId?:@"",@(channel.channelType)];
+        FMResultSet *resultSet = [db executeQuery:SQL_MESSAGE_EXTRA_MAX_VERSION,channel.channelId?:@"",@(channel.channelType)];
         if(resultSet.next) {
             maxVersion = [resultSet intForColumn:@"max_version"];
         }
@@ -933,10 +923,63 @@ static WKMessageDB *_instance;
 }
 
 
+-(void) saveOrUpdateStreams:(NSArray<WKStream*>*)streams {
+    if(!streams || streams.count == 0) {
+        return;
+    }
+    [[WKDB sharedDB].dbQueue inTransaction:^(FMDatabase * _Nonnull db, BOOL * _Nonnull rollback) {
+        
+        [self saveOrUpdateStreams:streams db:db];
+    }];
+}
+
+-(void) saveOrUpdateStreams:(NSArray<WKStream*>*)streams db:(FMDatabase*)db{
+    for (NSInteger i=0; i<streams.count; i++) {
+        WKStream *stream = streams[i];
+        [db executeUpdate:SQL_STREAM_SAVE_OR_UPDATE,stream.channel.channelId?:@"",@(stream.channel.channelType),stream.clientMsgNo?:@"",stream.streamNo?:@"",@(stream.streamSeq),stream.contentData?:@""];
+    }
+}
+
+-(NSArray<WKStream*>*) getStreams:(NSString*)streamNo {
+    if(!streamNo || [streamNo isEqualToString:@""]) {
+        return nil;
+    }
+    NSMutableArray<WKStream*> *streams = [NSMutableArray array];
+    [WKDB.sharedDB.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        FMResultSet *resultSet = [db executeQuery:SQL_STREAM_WITH_STREAM_NO,streamNo];
+        while (resultSet.next) {
+            [streams addObject:[self toStream:resultSet db:db]];
+        }
+        [resultSet close];
+    }];
+    return  streams;
+}
+
+-(WKStream*) toStream:(FMResultSet*)resultSet db:(FMDatabase*)db {
+    WKStream *stream = [WKStream new];
+    NSString *channelID = [resultSet stringForColumn:@"channel_id"];
+    int channelType = [resultSet intForColumn:@"channel_type"];
+    stream.channel = [WKChannel channelID:channelID channelType:channelType];
+    NSData *data =  [resultSet dataForColumn:@"content"];
+    stream.contentData = data;
+    if(data) {
+        __autoreleasing NSError *error = nil;
+        NSDictionary *contentDictionary = [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:&error];
+        NSInteger contentType = 0;
+        if(contentDictionary && contentDictionary[@"type"]) {
+             contentType = [contentDictionary[@"type"] integerValue];
+        }
+        stream.content = [self decodeContent:contentType data:data db:db];
+    }
+    return stream;
+}
+
+
 -(WKMessage*) toMessage:(NSDictionary*)dict db:(FMDatabase*)db{
     WKMessage *message = [WKMessage new];
     message.clientSeq = [dict[@"id"] unsignedIntValue];
     message.clientMsgNo = dict[@"client_msg_no"];
+    message.streamNo = dict[@"stream_no"];
     message.messageId = [dict[@"message_id"] unsignedLongLongValue];
     message.messageSeq = [dict[@"message_seq"] unsignedIntValue];
     message.orderSeq = [dict[@"order_seq"] unsignedIntValue];
@@ -1016,10 +1059,6 @@ static WKMessageDB *_instance;
         message.remoteExtra.uploadStatus = [dict[@"upload_status"] integerValue];
     }
     
-//    if(!message.fromUid || [message.fromUid isEqualToString:@""]) { // 如果协议层没有给fromUID 则如果content层有则填充上去
-//        message.fromUid = message.content.senderUserInfo? message.content.senderUserInfo.uid:@"";
-//    }
-    
     message.status = [dict[@"status"] integerValue];
     message.reasonCode = [dict[@"reason_code"] integerValue];
     NSString *extraStr = dict[@"extra"];
@@ -1049,4 +1088,5 @@ static WKMessageDB *_instance;
     [messageContent decode:contentData db:db];
     return messageContent;
 }
+
 @end

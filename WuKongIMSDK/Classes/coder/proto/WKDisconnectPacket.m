@@ -18,9 +18,6 @@
 }
 
 -(WKPacket*) decode:(NSData*) body header:(WKHeader*)header {
-    if([WKSDK shared].options.proto == WK_PROTO_MOS) {
-        return [self decodeMOS:body header:header];
-    }
     return [self decodeLM:body header:header];
 }
 

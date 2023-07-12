@@ -9,6 +9,7 @@
 #import "WKChannelManager.h"
 #import "WKMemoryCache.h"
 #import "WKSDK.h"
+#import "WKMessageDB.h"
 
 @implementation WKMessageHeader
 
@@ -29,6 +30,7 @@
 
 @interface WKMessage ()
 @property(nonatomic,assign) NSInteger contentTypeInner;
+@property(nonatomic,strong) NSMutableArray<WKStream*> *streamsInner;
 @end
 
 @implementation WKMessage
@@ -61,8 +63,6 @@
     }
      return _from;
 }
-
-
 
 - (WKChannelMember *)memberOfFrom {
    
@@ -98,6 +98,13 @@
         return _contentTypeInner;
     }
     return self.content.realContentType;
+}
+
+- (BOOL)streamOn {
+    if(self.streamNo && ![self.streamNo isEqualToString:@""]) {
+        return true;
+    }
+    return false;
 }
 
 - (void)setContentType:(NSInteger)contentType {

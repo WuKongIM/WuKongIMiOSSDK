@@ -11,6 +11,12 @@
 #import "WKSetting.h"
 NS_ASSUME_NONNULL_BEGIN
 
+typedef enum : NSUInteger {
+    WKStreamFlagStart,
+    WKStreamFlagIng,
+    WKStreamFlagEnd,
+} WKStreamFlag;
+
 @interface WKRecvPacket : WKPacket<WKPacketBodyCoder>
 
 // 消息设置
@@ -21,6 +27,12 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic,assign) uint32_t messageSeq;
 // 客户端消息唯一编号（用于消息去重）
 @property(nonatomic,copy) NSString *clientMsgNo;
+// 流式编号
+@property(nonatomic,copy) NSString *streamNo;
+// 流式标记
+@property(nonatomic,assign) WKStreamFlag streamFlag;
+// 流式序号
+@property(nonatomic,assign) uint64_t streamSeq;
 // 服务器时间
 @property(nonatomic,assign) uint32_t timestamp;
 // 发送者UID

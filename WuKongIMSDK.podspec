@@ -8,8 +8,8 @@
 
 Pod::Spec.new do |s|
   s.name             = 'WuKongIMSDK'
-  s.version          = '1.0.0'
-  s.summary          = ' SKD for WuKongIM.'
+  s.version          = '1.0.1'
+  s.summary          = '悟空IM是一款简单，高效，支持完全私有化的即时通讯.'
 
 # This description is used to generate tags and improve search results.
 #   * Think: What does it do? Why did you write it? What is the focus?
@@ -18,7 +18,7 @@ Pod::Spec.new do |s|
 #   * Finally, don't worry about the indent, CocoaPods strips it!
 
   s.description      = <<-DESC
-TODO: Add long description of the pod here.
+悟空IM是一款简单，高效，支持完全私有化的即时通讯，提供群聊，点对点通讯解决方案.
                        DESC
 
   s.homepage         = 'https://github.com/WuKongIM/WuKongIMiOSSDK'
@@ -27,10 +27,10 @@ TODO: Add long description of the pod here.
   s.author           = { 'tangtaoit' => 'tt@tgo.ai' }
   s.source           = { :git => "https://github.com/WuKongIM/WuKongIMiOSSDK.git" }
   # s.social_media_url = 'https://twitter.com/<TWITTER_USERNAME>'
-  s.platform     = :ios, '12.0'
+  s.platform     = :ios, '11.0'
   s.requires_arc = true
   
-  s.ios.deployment_target = '12.0'
+  s.ios.deployment_target = '11.0'
   
   s.vendored_libraries = 'WuKongIMSDK/Classes/private/arm/lib/*.a'
   

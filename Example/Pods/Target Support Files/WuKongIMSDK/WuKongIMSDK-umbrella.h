@@ -88,6 +88,7 @@
 #import "WKReaction.h"
 #import "WKReminder.h"
 #import "WKRobot.h"
+#import "WKStream.h"
 #import "WKSyncChannelMessageModel.h"
 #import "WKSyncConversationModel.h"
 #import "WKTaskOperator.h"

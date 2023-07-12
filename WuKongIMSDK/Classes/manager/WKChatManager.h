@@ -160,11 +160,22 @@ typedef BOOL(^MessageStoreBeforeIntercept)(WKMessage*message);
 /**
   查询某个频道最新的消息 （一般是第一次进入会话页面查询首屏消息时调用此方法）
  @param channel 频道
+ @param endOrderSeq 结束的orderSeq，如果为0表示不约束
  @param limit 消息数量限制
  @param complete 查询回调
- @param alwayRequest 是否总是从服务器请求最新的消息数据
  */
--(void) pullLastMessages:(WKChannel*)channel limit:(int)limit alwayRequest:(BOOL)alwayRequest complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete;
+-(void) pullLastMessages:(WKChannel*)channel endOrderSeq:(uint32_t)endOrderSeq limit:(int)limit complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete;
+
+
+/**
+ 查询某个频道最新的消息 （一般是第一次进入会话页面查询首屏消息时调用此方法）
+@param channel 频道
+@param endOrderSeq 结束的orderSeq，如果为0表示不约束
+@param maxMessageSeq 频道最大的messageSeq，也就是服务器最大的messageSeq ，非必填，可为0
+@param limit 消息数量限制
+@param complete 查询回调
+ */
+-(void) pullLastMessages:(WKChannel*)channel endOrderSeq:(uint32_t)endOrderSeq maxMessageSeq:(uint32_t)maxMessageSeq limit:(int)limit complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete;
 
 /**
   下拉加载消息
@@ -183,6 +194,8 @@ typedef BOOL(^MessageStoreBeforeIntercept)(WKMessage*message);
  */
 -(void) pullUp:(WKChannel*)channel startOrderSeq:(uint32_t)startOrderSeq limit:(int)limit complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete;
 
+-(void) pullUp:(WKChannel*)channel startOrderSeq:(uint32_t)startOrderSeq endOrderSeq:(uint32_t)endOrderSeq limit:(int)limit complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete;
+
 /**
  查询指定orderSeq周围的消息 上5条下5条 ，比如 orderSeq 为 20 则查询 16 17 18 19 20 21 22 23 24 25 主要使用在定位消息
  @param channel 频道
@@ -190,7 +203,13 @@ typedef BOOL(^MessageStoreBeforeIntercept)(WKMessage*message);
  */
 -(void) pullAround:(WKChannel*)channel orderSeq:(uint32_t)orderSeq  limit:(int)limit complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete;
 
-
+/**
+ 查询指定orderSeq周围的消息 上5条下5条 ，比如 orderSeq 为 20 则查询 16 17 18 19 20 21 22 23 24 25 主要使用在定位消息
+ @param channel 频道
+ @param orderSeq 以此OrderSeq查询周围的消息
+ @param maxMessageSeq 目前服务器最大的messageSeq（目前第一屏数据不请求接口）
+ */
+-(void) pullAround:(WKChannel*)channel orderSeq:(uint32_t)orderSeq maxMessageSeq:(uint32_t)maxMessageSeq  limit:(int)limit complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete;
 
 /**
   拉取历史消息
@@ -201,7 +220,7 @@ typedef BOOL(^MessageStoreBeforeIntercept)(WKMessage*message);
  @param pullMode 拉取方式
  @param complete 查询回调
  */
--(void) pullMessages:(WKChannel*)channel startOrderSeq:(uint32_t)startOrderSeq endOrderSeq:(uint32_t)endOrderSeq limit:(int)limit pullMode:(WKPullMode)pullMode  complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete DEPRECATED_MSG_ATTRIBUTE("use pullDown or pullUp");
+-(void) pullMessages:(WKChannel*)channel startOrderSeq:(uint32_t)startOrderSeq endOrderSeq:(uint32_t)endOrderSeq limit:(int)limit pullMode:(WKPullMode)pullMode  complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete;
 
 /**
  查询消息
@@ -384,7 +403,8 @@ typedef BOOL(^MessageStoreBeforeIntercept)(WKMessage*message);
 /// 清除所有消息
 -(void) onMessageAllCleared;
 
-
+// 流消息
+-(void) onMessageStream:(WKStream*)stream;
 
 @end
 

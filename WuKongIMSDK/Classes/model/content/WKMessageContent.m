@@ -111,9 +111,6 @@ NSString * const WKEntityTypeRobotCommand = @"bot_command";
             [dataDict addEntriesFromDictionary:messageDict];
         }
         NSDictionary *encodeDataDict = dataDict;
-        if([WKSDK shared].options.mosConvertOn) {
-            encodeDataDict = [[WKMOSContentConvertManager shared] convertContentToMOS:dataDict message:self.message];
-        }
         self.contentDict = encodeDataDict;
         NSData *jsonData = [NSJSONSerialization dataWithJSONObject:encodeDataDict options:kNilOptions error:nil];
         
@@ -156,9 +153,6 @@ NSString * const WKEntityTypeRobotCommand = @"bot_command";
             self.visibles = dictionary[@"visibles"];
         }
         
-        if([WKSDK shared].options.mosConvertOn) {
-            dictionary = [[WKMOSContentConvertManager shared] convertContentToLM:dictionary message:self.message];
-        }
         // 解码用户信息
         [self decodeSenderUserInfo:dictionary];
         // 解码@数据
@@ -184,10 +178,6 @@ NSString * const WKEntityTypeRobotCommand = @"bot_command";
         // 解码消息数据
         [self decodeWithJSON:dictionary];
         
-        // 如果是mos协议，那么解析payload里的session
-        if([WKSDK shared].options.mosConvertOn) {
-            [self decodeSessionInfoIfNeed:dictionary];
-        }
         self.contentDict = [NSDictionary dictionaryWithDictionary:dictionary];
     } @catch (NSException *exception) {
         NSLog(@"解码失败！->%@",exception);
@@ -219,54 +209,18 @@ NSString * const WKEntityTypeRobotCommand = @"bot_command";
 
 // 解码@数据
 -(void) decodeMentionInfo:(NSMutableDictionary*)dict {
-    BOOL hasMosAT = false;
-    if([WKSDK shared].options.mosConvertOn) {
-        if([dict[@"type"] integerValue] == WK_TEXT) {
-            NSString *atRegular = @"(@\\{\\w+\\})";
-            NSString *content = dict[@"content"];
-            NSArray* matches = [self matcheInString:content regularExpressionWithPattern:atRegular];
-            NSString *newContent = content;
-            NSMutableArray *mentionUIDs = [NSMutableArray array];
-            if (matches && matches.count > 0) {
-                hasMosAT = true;
-                for (NSTextCheckingResult* match in matches) {
-                    NSString *mentionUIDMatch = [content substringWithRange:match.range];
-                    NSString *mentionUID = [self replaceSpecial:mentionUIDMatch];
-                    [mentionUIDs addObject:mentionUID];
-                    
-                    WKChannelInfo *channelInfo;
-                    if(self.db) {
-                        channelInfo = [[WKChannelInfoDB shared] queryChannelInfo:[WKChannel personWithChannelID:mentionUID] db:self.db];
-                    }else{
-                        channelInfo = [[WKChannelInfoDB shared] queryChannelInfo:[WKChannel personWithChannelID:mentionUID]];
-                    }
-                    if(channelInfo) {
-                        newContent = [newContent stringByReplacingOccurrencesOfString:mentionUIDMatch withString:[NSString stringWithFormat:@"@%@ ",channelInfo.displayName]];
-                    }else{
-                        [[WKSDK shared].channelManager fetchChannelInfo:[WKChannel personWithChannelID:mentionUID]];
-                    }
-                    
-                }
-                self.mentionedInfo = [[WKMentionedInfo alloc] initWithMentionedType:WK_Mentioned_Users uids:mentionUIDs];
-            }
-            dict[@"content"] = newContent;
+    NSDictionary *mentionDict = dict[@"mention"];
+    if(mentionDict && [mentionDict isKindOfClass:[NSDictionary class]]) {
+        WKMentionedType type = WK_Mentioned_Users;
+        if(mentionDict[@"all"] && [mentionDict[@"all"] integerValue]==1) {
+            type = WK_Mentioned_All;
         }
-    }
-    if(!hasMosAT) {
-        NSDictionary *mentionDict = dict[@"mention"];
-        if(mentionDict && [mentionDict isKindOfClass:[NSDictionary class]]) {
-            WKMentionedType type = WK_Mentioned_Users;
-            if(mentionDict[@"all"] && [mentionDict[@"all"] integerValue]==1) {
-                type = WK_Mentioned_All;
-            }
-            NSArray<NSString*> *uids;
-            if([mentionDict[@"uids"] isKindOfClass:[NSArray class]]) {
-                 uids =mentionDict[@"uids"];
-            }
-             self.mentionedInfo = [[WKMentionedInfo alloc] initWithMentionedType:type uids:uids];
+        NSArray<NSString*> *uids;
+        if([mentionDict[@"uids"] isKindOfClass:[NSArray class]]) {
+             uids =mentionDict[@"uids"];
         }
+         self.mentionedInfo = [[WKMentionedInfo alloc] initWithMentionedType:type uids:uids];
     }
-  
 }
 
 -(NSString*) replaceSpecial:(NSString*)data{

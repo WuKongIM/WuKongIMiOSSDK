@@ -447,12 +447,7 @@
     }
     
     // 调用委托
-    NSArray<WKMessage*> *messages;
-    if([WKSDK shared].options.proto == WK_PROTO_WKAO) {
-        messages = [[WKMessageDB shared] getMessagesWithClientSeqs:clientIDs];
-    } else {
-        messages = [[WKMessageDB shared] getMessagesWithClientMsgNos:clientIDs];
-    }
+    NSArray<WKMessage*> *messages = [[WKMessageDB shared] getMessagesWithClientSeqs:clientIDs];
     if(messages && messages.count>0) {
         for (NSInteger i=0; i<messages.count; i++) {
             WKMessage *message = messages[i];
@@ -487,13 +482,8 @@
 }
 
 -(void) handleRecv:(NSArray<WKRecvPacket*>*) packets {
-    NSArray<WKMessage*> *messages = [self handleRecvPackets:packets];
+    NSArray<WKMessage*> *messages = [self recvPacketsToMessages:packets];
     
-    // 处理消息
-    //    __weak typeof(self) weakSelf = self;
-    //    dispatch_async(weakSelf.handleMessageQueue,^{
-    //        [weakSelf handleMessages:messages];
-    //    });
     [self handleMessages:messages];
     
     
@@ -518,10 +508,27 @@
     
     // 存储消息
     NSArray<WKMessage*> *storeMessages = [[WKMessageDB shared] saveMessages:[self filterNeedStoreMessages:messages]];
+    // 流消息
+    NSArray<WKMessage*> *streamMessages =  [self filterStreamMessagesWithStreamFlagIng:messages];
+    
+    NSArray<WKStream*> *streams;
+    if(streamMessages && streamMessages.count>0) {
+        
+        streams = [self getStreams:streamMessages];
+        
+        // 保存流式消息
+        NSMutableArray<WKStream*> *needStoreStreams = [NSMutableArray array]; // 需要存储的流
+        for (WKMessage *m in streamMessages) {
+            if(!m.header.noPersist && !m.header.syncOnce) {
+                [needStoreStreams addObject:[self toStream:m]];
+            }
+        }
+        [WKMessageDB.shared saveOrUpdateStreams:needStoreStreams];
+    }
     
     NSArray<WKCMDModel*> *cmds = [self getCMDModels:messages]; // 获取命令消息
     
-    NSArray<WKMessage*> *noCMDMessages = [self filterNoCMDMessages:messages]; // 非cmd消息
+    NSArray<WKMessage*> *commonMessages  = [self filterNoCMDAndNoStreamMessages:messages]; // 非cmd消息和流消息
     
     if(storeMessages && storeMessages.count>0) {
         // 更新最近会话(只有需要存储的消息才更新最近会话)
@@ -529,14 +536,39 @@
     }
     
     // 调用委托通知上层 不管存不存的消息都需要通知到delegate
-    [self callRecvMessagesDelegate:noCMDMessages];
+    [self callRecvMessagesDelegate:commonMessages];
     
     if(cmds&&cmds.count>0) { // cmd通知
         for (WKCMDModel *cmd in cmds) {
             [[WKSDK shared].cmdManager callOnCMDDelegate:cmd];
         }
     }
+    if(streams && streams.count>0) {
+        [self callStreamDelegate:streams];
+    }
     
+}
+
+-(NSArray<WKStream*>*) getStreams:(NSArray<WKMessage*>*) messages {
+    NSMutableArray<WKStream*> *streams = [NSMutableArray array];
+    if(messages && messages.count>0) {
+        for (WKMessage *message in messages) {
+            WKStream *stream = [self toStream:message];
+            [streams addObject:stream];
+        }
+    }
+    return streams;
+}
+
+-(WKStream*) toStream:(WKMessage*)msg {
+    WKStream *stream = [WKStream new];
+    stream.channel = msg.channel;
+    stream.clientMsgNo = msg.clientMsgNo;
+    stream.streamNo = msg.streamNo;
+    stream.streamSeq = msg.streamSeq;
+    stream.content = msg.content;
+    stream.contentData = msg.contentData;
+    return stream;
 }
 
 -(NSArray<WKCMDModel*>*) getCMDModels:(NSArray<WKMessage*>*)messages {
@@ -544,19 +576,24 @@
     NSMutableArray *cmds = [NSMutableArray array];
     if(messages && messages.count) {
         for (WKMessage *message in messages) {
-            WKCMDModel *cmdModel = [WKCMDModel message:message];
-            [cmds addObject:cmdModel];
+            if(message.contentType == WK_CMD) {
+                WKCMDModel *cmdModel = [WKCMDModel message:message];
+                [cmds addObject:cmdModel];
+            }
         }
     }
     return cmds;
 }
-// 排除掉非命令消息
--(NSArray<WKMessage*>*) filterNoCMDMessages:(NSArray<WKMessage*>*)messages {
+// 排除掉非命令消息和流消息
+-(NSArray<WKMessage*>*) filterNoCMDAndNoStreamMessages:(NSArray<WKMessage*>*)messages {
     NSMutableArray *newMessages = [NSMutableArray array];
     if(messages && messages.count>0) {
         for (WKMessage *message in messages) {
-            if(message.isDeleted == 0 && message.contentType != WK_CMD) {
-                [newMessages addObject:message];
+            if((message.isDeleted == 0 && message.contentType != WK_CMD)) {
+                if(!message.setting.streamOn ||  (message.setting.streamOn && message.streamFlag == WKStreamFlagStart)) {
+                    [newMessages addObject:message];
+                }
+               
             }
         }
     }
@@ -569,6 +606,21 @@
     if(messages && messages.count>0) {
         for (WKMessage *message in messages) {
             if(message.header && !message.header.noPersist) {
+                if(!message.setting.streamOn || (message.setting.streamOn && message.streamFlag == WKStreamFlagStart)) {
+                    [items addObject:message];
+                }
+            }
+        }
+    }
+    return items;
+}
+
+// 获取进行中的流消息
+-(NSArray*) filterStreamMessagesWithStreamFlagIng:(NSArray*)messages {
+    NSMutableArray *items = [NSMutableArray array];
+    if(messages && messages.count>0) {
+        for (WKMessage *message in messages) {
+            if(message.setting.streamOn && message.streamFlag == WKStreamFlagIng) {
                 [items addObject:message];
             }
         }
@@ -692,11 +744,8 @@
     }];
 }
 
--(void) pullMessages:(WKChannel*)channel startOrderSeq:(uint32_t)startOrderSeq endOrderSeq:(uint32_t)endOrderSeq limit:(int)limit pullMode:(WKPullMode)pullMode  maxExecCount:(NSInteger)maxExecCount complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete {
-    [self pullMessages:channel startOrderSeq:startOrderSeq endOrderSeq:endOrderSeq limit:limit pullMode:pullMode alwayLastRequest:NO maxExecCount:maxExecCount complete:complete];
-}
 
--(void) pullMessages:(WKChannel*)channel startOrderSeq:(uint32_t)startOrderSeq endOrderSeq:(uint32_t)endOrderSeq limit:(int)limit pullMode:(WKPullMode)pullMode alwayLastRequest:(BOOL)alwayLastRequest  maxExecCount:(NSInteger)maxExecCount complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete {
+-(void) pullMessages:(WKChannel*)channel startOrderSeq:(uint32_t)startOrderSeq endOrderSeq:(uint32_t)endOrderSeq maxMessageSeq:(uint32_t)maxMessageSeq limit:(int)limit pullMode:(WKPullMode)pullMode   maxExecCount:(NSInteger)maxExecCount complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete {
     if([WKSDK shared].isDebug) {
         NSLog(@"##########拉取频道[%@]消息##########",channel);
     }
@@ -780,7 +829,7 @@
                     // 存储消息
                     [[WKMessageDB shared] replaceMessages:model.messages];
                     // 重新调用
-                    [weakSelf pullMessages:channel startOrderSeq:startOrderSeq endOrderSeq:endOrderSeq limit:limit pullMode:pullMode  maxExecCount:maxExecCount complete:complete];
+                    [weakSelf pullMessages:channel startOrderSeq:startOrderSeq endOrderSeq:endOrderSeq maxMessageSeq:maxMessageSeq limit:limit pullMode:pullMode  maxExecCount:maxExecCount complete:complete];
                     
                 }];
                 if(hasSync) {
@@ -831,7 +880,7 @@
                 // 存储消息
                 [[WKMessageDB shared] replaceMessages:model.messages];
                 // 重新调用
-                [weakSelf pullMessages:channel startOrderSeq:startOrderSeq endOrderSeq:endOrderSeq limit:limit pullMode:pullMode  maxExecCount:maxExecCount complete:complete];
+                [weakSelf pullMessages:channel startOrderSeq:startOrderSeq endOrderSeq:endOrderSeq maxMessageSeq:maxMessageSeq limit:limit pullMode:pullMode  maxExecCount:maxExecCount complete:complete];
             }];
             if(hasSync) {
                 return;
@@ -842,50 +891,54 @@
     
     // ########## 计算最后一页后是否还存在消息 ##########
     if(newMessages.count<limit) {
-        realStartMessageSeq = 0;
-        if(newMessages.count>0) {
-            if(pullMode == WKPullModeUp) {
-                for (NSInteger i=newMessages.count-1; i>=0; i--) {
-                    realStartMessageSeq = newMessages[i].messageSeq;
-                    if(realStartMessageSeq!=0) {
-                        break;
+        
+        if(newMessages.count == 0 || maxMessageSeq == 0 || newMessages[newMessages.count-1].messageSeq != maxMessageSeq) { // 当查询出来的最大的messageSeq 等于 maxMessageSeq的时候 不需要同步
+            realStartMessageSeq = 0;
+            if(newMessages.count>0) {
+                if(pullMode == WKPullModeUp) {
+                    for (NSInteger i=newMessages.count-1; i>=0; i--) {
+                        realStartMessageSeq = newMessages[i].messageSeq;
+                        if(realStartMessageSeq!=0) {
+                            break;
+                        }
                     }
-                }
-               
-            }else {
-                for (NSInteger i=0; i<newMessages.count; i++) {
-                    realStartMessageSeq = newMessages[0].messageSeq;
-                    if(realStartMessageSeq!=0) {
-                        break;
+                   
+                }else {
+                    for (NSInteger i=0; i<newMessages.count; i++) {
+                        realStartMessageSeq = newMessages[0].messageSeq;
+                        if(realStartMessageSeq!=0) {
+                            break;
+                        }
                     }
+                    
                 }
-                
+            }
+            bool hasSync = [self calSync:channel startMessageSeq:realStartMessageSeq endMessageSeq:0 pullMode:pullMode complete:^(WKSyncChannelMessageModel *syncChannelMessageModel, NSError *error) {
+                if(error) {
+                    [weakSelf completePullMessages:messages error:error complete:complete];
+                    return;
+                }
+                if(!syncChannelMessageModel.messages || syncChannelMessageModel.messages.count<=0) {
+                    if(WKSDK.shared.isDebug) {
+                        NSLog(@"没有消息了！");
+                    }
+                    [weakSelf completePullMessages:messages error:nil complete:complete];
+                    return;
+                }
+                if([weakSelf containMessages:newMessages compareMessages:syncChannelMessageModel.messages]) {
+                    [weakSelf completePullMessages:messages error:nil complete:complete];
+                    return;
+                }
+                // 存储消息
+                [[WKMessageDB shared] replaceMessages:syncChannelMessageModel.messages];
+                // 重新调用
+                [weakSelf pullMessages:channel startOrderSeq:startOrderSeq endOrderSeq:endOrderSeq maxMessageSeq:maxMessageSeq limit:limit pullMode:pullMode  maxExecCount:maxExecCount complete:complete];
+            }];
+            if(hasSync) {
+                return;
             }
         }
-        bool hasSync = [self calSync:channel startMessageSeq:realStartMessageSeq endMessageSeq:0 pullMode:pullMode complete:^(WKSyncChannelMessageModel *syncChannelMessageModel, NSError *error) {
-            if(error) {
-                [weakSelf completePullMessages:messages error:error complete:complete];
-                return;
-            }
-            if(!syncChannelMessageModel.messages || syncChannelMessageModel.messages.count<=0) {
-                if(WKSDK.shared.isDebug) {
-                    NSLog(@"没有消息了！");
-                }
-                [weakSelf completePullMessages:messages error:nil complete:complete];
-                return;
-            }
-            if([weakSelf containMessages:newMessages compareMessages:syncChannelMessageModel.messages]) {
-                [weakSelf completePullMessages:messages error:nil complete:complete];
-                return;
-            }
-            // 存储消息
-            [[WKMessageDB shared] replaceMessages:syncChannelMessageModel.messages];
-            // 重新调用
-            [weakSelf pullMessages:channel startOrderSeq:startOrderSeq endOrderSeq:endOrderSeq limit:limit pullMode:pullMode  maxExecCount:maxExecCount complete:complete];
-        }];
-        if(hasSync) {
-            return;
-        }
+        
     }
     
     // ########## 是否为第一次请求 ##########
@@ -901,34 +954,37 @@
                 // 存储消息
                 [[WKMessageDB shared] replaceMessages:model.messages];
                 // 重新调用
-                [weakSelf pullMessages:channel startOrderSeq:startOrderSeq endOrderSeq:endOrderSeq limit:limit pullMode:pullMode  maxExecCount:maxExecCount complete:complete];
+                [weakSelf pullMessages:channel startOrderSeq:startOrderSeq endOrderSeq:endOrderSeq maxMessageSeq:maxMessageSeq limit:limit pullMode:pullMode  maxExecCount:maxExecCount complete:complete];
             }];
             return;
-        }else if(newMessages.count>0 && pullMode == WKPullModeUp && alwayLastRequest) {
+        }else if(newMessages.count>0 && pullMode == WKPullModeUp) {
             int limit =  (int)[WKSDK shared].options.syncChannelMessageLimit;
             WKMessage *lastMsg = newMessages.lastObject;
-            [self calSyncForForce:channel startMessageSeq:lastMsg.messageSeq endMessageSeq:0 pullMode:pullMode limit:limit complete:^(WKSyncChannelMessageModel *model, NSError *error) {
-                if(error) {
-                    [weakSelf completePullMessages:messages error:error complete:complete];
-                    return;
-                }
-                NSMutableArray<WKMessage*> *lastMessages = [NSMutableArray array];
-                if(model.messages && model.messages.count>0) {
-                    for (WKMessage *m in model.messages) {
-                        if(m.messageSeq > lastMsg.messageSeq) {
-                            [lastMessages addObject:m];
+            if(maxMessageSeq == 0 || maxMessageSeq != lastMsg.messageSeq ) {
+                [self calSyncForForce:channel startMessageSeq:lastMsg.messageSeq endMessageSeq:0 pullMode:pullMode limit:limit complete:^(WKSyncChannelMessageModel *model, NSError *error) {
+                    if(error) {
+                        [weakSelf completePullMessages:messages error:error complete:complete];
+                        return;
+                    }
+                    NSMutableArray<WKMessage*> *lastMessages = [NSMutableArray array];
+                    if(model.messages && model.messages.count>0) {
+                        for (WKMessage *m in model.messages) {
+                            if(m.messageSeq > lastMsg.messageSeq) {
+                                [lastMessages addObject:m];
+                            }
+                        }
+                        if(lastMessages.count>0) {
+                            // 存储消息
+                            [[WKMessageDB shared] replaceMessages:lastMessages];
                         }
                     }
-                    if(lastMessages.count>0) {
-                        // 存储消息
-                        [[WKMessageDB shared] replaceMessages:lastMessages];
-                    }
-                }
-               
-                // 重新调用
-                [weakSelf pullMessages:channel startOrderSeq:startOrderSeq endOrderSeq:endOrderSeq limit:limit pullMode:pullMode  maxExecCount:maxExecCount complete:complete];
-            }];
-            return;
+                   
+                    // 重新调用
+                    [weakSelf pullMessages:channel startOrderSeq:startOrderSeq endOrderSeq:endOrderSeq maxMessageSeq:maxMessageSeq limit:limit pullMode:pullMode  maxExecCount:maxExecCount complete:complete];
+                }];
+                return;
+            }
+            
         }
     }
     
@@ -1043,13 +1099,10 @@
     }
 }
 
--(void) pullMessages:(WKChannel*)channel startOrderSeq:(uint32_t)startOrderSeq endOrderSeq:(uint32_t)endOrderSeq limit:(int)limit pullMode:(WKPullMode)pullMode   complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete {
-    [self pullMessages:channel startOrderSeq:startOrderSeq endOrderSeq:endOrderSeq limit:limit pullMode:pullMode  maxExecCount:5 complete:complete];
+-(void) pullMessages:(WKChannel*)channel startOrderSeq:(uint32_t)startOrderSeq endOrderSeq:(uint32_t)endOrderSeq  limit:(int)limit pullMode:(WKPullMode)pullMode   complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete {
+    [self pullMessages:channel startOrderSeq:startOrderSeq endOrderSeq:endOrderSeq maxMessageSeq:0 limit:limit pullMode:pullMode  maxExecCount:5 complete:complete];
 }
 
--(void) pullMessages:(WKChannel*)channel startOrderSeq:(uint32_t)startOrderSeq endOrderSeq:(uint32_t)endOrderSeq limit:(int)limit pullMode:(WKPullMode)pullMode alwayLastRequest:(BOOL)alwayLastRequest   complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete {
-    [self pullMessages:channel startOrderSeq:startOrderSeq endOrderSeq:endOrderSeq limit:limit pullMode:pullMode  alwayLastRequest:alwayLastRequest maxExecCount:5 complete:complete];
-}
 
 // 查询最新的消息
 -(void) pullLastMessages:(WKChannel*)channel limit:(int)limit complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete {
@@ -1057,8 +1110,12 @@
     [self pullMessages:channel startOrderSeq:0 endOrderSeq:0 limit:limit pullMode:WKPullModeUp  complete:complete];
 }
 
--(void) pullLastMessages:(WKChannel*)channel limit:(int)limit alwayRequest:(BOOL)alwayRequest complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete {
-    [self pullMessages:channel startOrderSeq:0 endOrderSeq:0 limit:limit pullMode:WKPullModeUp alwayLastRequest:alwayRequest   complete:complete];
+-(void) pullLastMessages:(WKChannel*)channel endOrderSeq:(uint32_t)endOrderSeq limit:(int)limit complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete {
+    [self pullMessages:channel startOrderSeq:0 endOrderSeq:endOrderSeq limit:limit pullMode:WKPullModeUp  complete:complete];
+}
+
+-(void) pullLastMessages:(WKChannel*)channel endOrderSeq:(uint32_t)endOrderSeq maxMessageSeq:(uint32_t)maxMessageSeq limit:(int)limit complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete {
+    [self pullMessages:channel startOrderSeq:0 endOrderSeq:endOrderSeq maxMessageSeq:maxMessageSeq limit:limit pullMode:WKPullModeUp maxExecCount:5 complete:complete];
 }
 
 -(void) pullDown:(WKChannel*)channel startOrderSeq:(uint32_t)startOrderSeq limit:(int)limit complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete{
@@ -1070,14 +1127,17 @@
     [self pullMessages:channel startOrderSeq:startOrderSeq endOrderSeq:0 limit:limit pullMode:WKPullModeUp complete:complete];
 }
 
+- (void)pullUp:(WKChannel *)channel startOrderSeq:(uint32_t)startOrderSeq endOrderSeq:(uint32_t)endOrderSeq limit:(int)limit complete:(void (^)(NSArray<WKMessage *> * _Nonnull, NSError * _Nonnull))complete {
+    [self pullMessages:channel startOrderSeq:startOrderSeq endOrderSeq:endOrderSeq limit:limit pullMode:WKPullModeUp complete:complete];
+}
 
--(void) pullAround:(WKChannel*)channel orderSeq:(uint32_t)aroundOrderSeq  limit:(int)limit complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete {
+-(void) pullAround:(WKChannel*)channel orderSeq:(uint32_t)aroundOrderSeq maxMessageSeq:(uint32_t)maxMessageSeq  limit:(int)limit complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete {
     uint32_t baseOrderSeq = aroundOrderSeq; // 基准orderSeq（起始ordeqrSeq）
     if (aroundOrderSeq!=0) {
-        uint32_t maxMessageSeq = [[WKMessageDB shared] getMaxMessageSeq:channel]; // 获取当前频道最大的messageSeq
+        uint32_t maxMessageSeqFromDB = [[WKMessageDB shared] getMaxMessageSeq:channel]; // 获取当前频道最大的messageSeq
         uint32_t aroundMessageSeq = [[WKSDK shared].chatManager getOrNearbyMessageSeq:aroundOrderSeq]; // 获取aroundOrderSeq最接近的messageSeq
         uint32_t baseMessageSeq = aroundMessageSeq;
-        if(maxMessageSeq > aroundMessageSeq && maxMessageSeq - aroundMessageSeq<limit) { // 如果消息数量不满足limit，则直接查询第一屏，baseMessageSeq为0
+        if(maxMessageSeqFromDB > aroundMessageSeq && maxMessageSeqFromDB - aroundMessageSeq<limit) { // 如果消息数量不满足limit，则直接查询第一屏，baseMessageSeq为0
             baseMessageSeq = 0;
         }else { // 如果满足limit数量，则以aroundOrderSeq为基准查询5条的第一条消息messageSeq，比如 aroundOrderSeq=10，getChannelAroundFirstMessageSeq查询到的就是 “9 8 7 6 5 ” 5条中的 5，然后以此messageSeq为baseMessageSeq进行查询
             if(baseMessageSeq>0) {
@@ -1093,16 +1153,22 @@
         }
         if(baseMessageSeq != 0 ) {
             // 如果最后一条messageSeq与开始messageSeq的差值小于查询数量，则向上偏移指定数量满足limit
-            if(maxMessageSeq - baseMessageSeq<limit) {
-                if(baseMessageSeq>(limit - (maxMessageSeq - baseMessageSeq))) {
-                    baseMessageSeq = baseMessageSeq - (limit - (maxMessageSeq - baseMessageSeq));
+            if(maxMessageSeqFromDB - baseMessageSeq<limit) {
+                if(baseMessageSeq>(limit - (maxMessageSeqFromDB - baseMessageSeq))) {
+                    baseMessageSeq = baseMessageSeq - (limit - (maxMessageSeqFromDB - baseMessageSeq));
                 }
                
             }
         }
         baseOrderSeq = [[WKSDK shared].chatManager getOrderSeq:baseMessageSeq];
     }
-    [self pullMessages:channel startOrderSeq:baseOrderSeq endOrderSeq:0 limit:limit pullMode:WKPullModeUp complete:complete];
+    
+    [self pullMessages:channel startOrderSeq:baseOrderSeq endOrderSeq:0 maxMessageSeq:maxMessageSeq limit:limit pullMode:WKPullModeUp maxExecCount:5 complete:complete];
+}
+
+-(void) pullAround:(WKChannel*)channel orderSeq:(uint32_t)aroundOrderSeq  limit:(int)limit complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete {
+   
+    
 }
 
 
@@ -1113,6 +1179,10 @@
 }
 
 -(BOOL) calSync:(WKChannel*)channel startMessageSeq:(uint32_t)startMessageSeq endMessageSeq:(uint32_t)endMessageSeq pullMode:(WKPullMode)pullMode  complete:(void(^)(WKSyncChannelMessageModel*model,NSError *error))complete{
+    
+    if(startMessageSeq == 1 && pullMode == WKPullModeDown) {
+        return false;
+    }
     
     int limit =  (int)[WKSDK shared].options.syncChannelMessageLimit;
     if((startMessageSeq == 0 && endMessageSeq == 0) || (pullMode == WKPullModeUp && startMessageSeq == 0)) {
@@ -1166,7 +1236,7 @@
         }
     }
 
-    [self calSyncForForce:channel startMessageSeq:startMessageSeq endMessageSeq:endMessageSeq pullMode:pullMode limit:limit complete:complete];
+    [self calSyncForForce:channel startMessageSeq:realStartMessageSeq endMessageSeq:endMessageSeq pullMode:pullMode limit:limit complete:complete];
     return true;
     
 }
@@ -1179,17 +1249,27 @@
         }
         return;
     }
-    uint32_t newStartMessageSeq = startMessageSeq;
-    if(newStartMessageSeq>0) {
-        if(pullMode == WKPullModeUp) {
-            newStartMessageSeq += 1;
-        }else {
-            if(newStartMessageSeq>1) {
-                newStartMessageSeq -= 1;
-            }
+    
+    uint32_t startSeq = startMessageSeq;
+    uint32_t endSeq = endMessageSeq;
+    if(pullMode == WKPullModeUp) {
+        if(startMessageSeq!=0) {
+            startSeq += 1; // 数据应该不包含自己
+        }
+        if(endMessageSeq !=0) {
+            endSeq += 1;
+        }
+        
+    }else {
+        if(startMessageSeq!=0) {
+            startSeq -= 1; // 数据应该不包含自己
+        }
+        if(endMessageSeq !=0) {
+            endSeq -= 1;
         }
     }
-    [WKSDK shared].chatManager.syncChannelMessageProvider(channel, newStartMessageSeq, endMessageSeq,limit,pullMode , ^(WKSyncChannelMessageModel * _Nullable syncChannelMessageModel, NSError * _Nullable error) {
+
+    [WKSDK shared].chatManager.syncChannelMessageProvider(channel, startSeq, endSeq,limit,pullMode , ^(WKSyncChannelMessageModel * _Nullable syncChannelMessageModel, NSError * _Nullable error) {
         if(error) {
             if(complete) {
                 complete(nil,error);
@@ -1211,7 +1291,7 @@
 }
 
 
--(NSArray<WKMessage*>*) handleRecvPackets:(NSArray<WKRecvPacket*>*)packets {
+-(NSArray<WKMessage*>*) recvPacketsToMessages:(NSArray<WKRecvPacket*>*)packets {
     NSMutableArray *messages = [NSMutableArray array];
     for (WKRecvPacket *packet in packets) {
         WKMessage *message = [[WKMessage alloc] init];
@@ -1223,6 +1303,9 @@
         message.messageId = packet.messageId;
         message.messageSeq = packet.messageSeq;
         message.clientMsgNo = packet.clientMsgNo;
+        message.streamNo = packet.streamNo;
+        message.streamSeq = packet.streamSeq;
+        message.streamFlag = packet.streamFlag;
         message.timestamp = packet.timestamp;
         message.fromUid = packet.fromUid;
         message.channel = [[WKChannel alloc] initWith:packet.channelId channelType:packet.channelType];
@@ -1253,11 +1336,6 @@
         if(messageContent.extra[@"session_id"]&&messageContent.extra[@"session_type"]) {
              message.channel = [[WKChannel alloc] initWith:messageContent.extra[@"session_id"] channelType:[messageContent.extra[@"session_type"] intValue]];
         }
-        if([WKSDK shared].options.mosConvertOn) {
-            if(message.contentType == 10) {
-                message.header.showUnread = YES;
-            }
-        }
         
         if(message.content.visibles && message.content.visibles.count>0) {
             message.isDeleted = ![message.content.visibles containsObject:[WKSDK shared].options.connectInfo.uid];
@@ -1280,9 +1358,6 @@
         return nil;
     }
      NSNumber *actContentType = [contentDict objectForKey:@"type"];
-    if([WKSDK shared].options.mosConvertOn) {
-        actContentType = @([[WKMOSContentConvertManager shared] convertTypeToLM:[actContentType integerValue]]);
-    }
     WKMessageContent *messageContent;
     if(!contentType) {
         messageContent = [[WKUnknownContent alloc] init];
@@ -1298,9 +1373,6 @@
 }
 
 -(WKMessageContent*) getMessageContent:(NSInteger)contentType {
-    if([WKSDK shared].options.mosConvertOn) {
-        contentType =[[WKMOSContentConvertManager shared] convertTypeToLM:contentType];
-    }
     WKMessageContent *messageContent;
     if(!contentType) {
         messageContent = [[WKUnknownContent alloc] init];
@@ -1412,6 +1484,34 @@
                 if(messages && messages.count>0) {
                     for(int i=0;i<messages.count;i++) {
                         [delegate onRecvMessages:messages[i] left:messages.count - (i+1)];
+                    }
+                }
+            }
+        }
+    }
+}
+
+- (void)callStreamDelegate:(NSArray<WKStream*>*)streams {
+    [self.delegateLock lock];
+    NSHashTable *copyDelegates =  [self.delegates copy];
+    [self.delegateLock unlock];
+    for (id delegate in copyDelegates) {//遍历delegates ，call delegate
+        if(!delegate) {
+            continue;
+        }
+        if ([delegate respondsToSelector:@selector(onMessageStream:)]) {
+            if (![NSThread isMainThread]) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    if(streams && streams.count>0) {
+                        for(int i=0;i<streams.count;i++) {
+                            [delegate onMessageStream:streams[i]];
+                        }
+                    }
+                });
+            }else {
+                if(streams && streams.count>0) {
+                    for(int i=0;i<streams.count;i++) {
+                        [delegate onMessageStream:streams[i]];
                     }
                 }
             }
@@ -1555,12 +1655,6 @@
 }
 
 -(void) syncMessageExtra:(WKChannel*)channel complete:(void(^)(NSError *error))complete maxReqCount:(NSInteger)maxCount{
-    if([WKSDK shared].options.mosConvertOn) {
-        if(complete) {
-            complete(nil);
-        }
-        return;
-    }
     if(maxCount<=0) {
         if(complete) {
             complete([NSError errorWithDomain:[NSString stringWithFormat:@"同步消息扩展的请求超过了最大次数！"] code:0 userInfo:nil]);

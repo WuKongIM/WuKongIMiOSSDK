@@ -51,6 +51,9 @@
 /// @param messages <#messages description#>
 - (void)callRecvMessagesDelegate:(NSArray<WKMessage*>*)messages;
 
+// 调用流式消息委托
+- (void)callStreamDelegate:(NSArray<WKStream*>*)streams;
+
 /// 获取所有消息存储之前的拦截器
 -(NSArray<MessageStoreBeforeIntercept>*) getMessageStoreBeforeIntercepts;
 

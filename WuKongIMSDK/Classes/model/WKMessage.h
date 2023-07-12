@@ -15,6 +15,8 @@
 #import "WKSetting.h"
 #import "WKMessageExtra.h"
 #import "WKReaction.h"
+#import "WKStream.h"
+#import "WKRecvPacket.h"
 
 NS_ASSUME_NONNULL_BEGIN
 @interface WKMessageHeader : NSObject
@@ -38,6 +40,12 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic,assign) uint32_t clientSeq; // 客户端序列号 (客户端提供，服务端原样返回)
 
 @property(nonatomic,copy) NSString *clientMsgNo; /// 客户端消息唯一编号(相同clientMsgNo被认为是重复消息)
+
+@property(nonatomic,copy) NSString *streamNo; // 流式编号
+
+@property(nonatomic,assign) WKStreamFlag streamFlag; // 流式标记
+
+@property(nonatomic,assign) uint64_t streamSeq; // 流式序号
 
 @property(nonatomic,assign) uint64_t messageId; // 消息ID（全局唯一）
 
@@ -85,18 +93,12 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic,assign) NSInteger viewedAt; // 查看时间戳
 
 @property(nonatomic,strong) WKMessageExtra *remoteExtra; // 消息远程扩展
-//
-//@property(nonatomic,assign) BOOL revoke; // 消息是否被撤回
-//@property(nonatomic,copy) NSString *revoker; // 撤回者的uid
-//@property(nonatomic,assign) NSInteger unreadCount; // 未读数量
-//@property(nonatomic,assign) NSInteger readedCount; //  已读数量
-//@property(nonatomic,assign) NSInteger extraVersion; // 扩展消息版本
-//@property(nonatomic,assign) BOOL readed; // 消息是否已读（“我”是否已读）
-//@property(nonatomic,strong,nullable) NSData *contentEditData; // 消息编辑后的正文data数据
-//@property(nonatomic,strong,nullable) WKMessageContent *contentEdit; // 消息编辑后的正文
-//@property(nonatomic,assign) NSInteger editedAt; // 消息编辑时间 （0表示消息未被编辑）
-//@property(nonatomic,assign) BOOL isEdit; //  是否编辑
-//@property(nonatomic,assign) BOOL needUpload; // 编辑内容是否需要上传
+
+@property(nonatomic,assign) BOOL  syncStreamsFromDB; // 是否从db同步流数据
+@property(nonatomic,strong) NSMutableArray<WKStream*> *streams; // 流式消息内容
+@property(nonatomic,assign) BOOL streamOn; // 是否开启了stream
+
+
 
 @end
 

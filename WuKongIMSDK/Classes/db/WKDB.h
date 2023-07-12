@@ -11,6 +11,8 @@
 //消息表
 #define TB_MESSAGE @"message"
 
+#define TB_STREAM @"stream"
+
 NS_ASSUME_NONNULL_BEGIN
 
 @interface WKDB : NSObject
