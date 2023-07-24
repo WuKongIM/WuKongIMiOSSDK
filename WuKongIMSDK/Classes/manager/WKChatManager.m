@@ -1133,33 +1133,42 @@
 
 -(void) pullAround:(WKChannel*)channel orderSeq:(uint32_t)aroundOrderSeq maxMessageSeq:(uint32_t)maxMessageSeq  limit:(int)limit complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete {
     uint32_t baseOrderSeq = aroundOrderSeq; // 基准orderSeq（起始ordeqrSeq）
+    uint32_t offset = 5;
     if (aroundOrderSeq!=0) {
         uint32_t maxMessageSeqFromDB = [[WKMessageDB shared] getMaxMessageSeq:channel]; // 获取当前频道最大的messageSeq
         uint32_t aroundMessageSeq = [[WKSDK shared].chatManager getOrNearbyMessageSeq:aroundOrderSeq]; // 获取aroundOrderSeq最接近的messageSeq
         uint32_t baseMessageSeq = aroundMessageSeq;
         if(maxMessageSeqFromDB > aroundMessageSeq && maxMessageSeqFromDB - aroundMessageSeq<limit) { // 如果消息数量不满足limit，则直接查询第一屏，baseMessageSeq为0
             baseMessageSeq = 0;
+        }else if(aroundMessageSeq>maxMessageSeq) {
+            baseMessageSeq = aroundMessageSeq;
+            if(baseMessageSeq>offset) {
+                baseMessageSeq = baseMessageSeq - offset;
+            }
         }else { // 如果满足limit数量，则以aroundOrderSeq为基准查询5条的第一条消息messageSeq，比如 aroundOrderSeq=10，getChannelAroundFirstMessageSeq查询到的就是 “9 8 7 6 5 ” 5条中的 5，然后以此messageSeq为baseMessageSeq进行查询
             if(baseMessageSeq>0) {
                 baseMessageSeq = [[WKMessageDB shared] getChannelAroundFirstMessageSeq:channel messageSeq:aroundMessageSeq];
+                if(aroundMessageSeq - baseMessageSeq > offset) {
+                    baseMessageSeq = aroundMessageSeq - offset;
+                }
                 if(baseMessageSeq == 0) { // 如果baseMessageSeq=0 说明本地没有对应的消息
-                    if(aroundMessageSeq - 5 >0) {
-                        baseMessageSeq = aroundMessageSeq - 5;
+                    if(aroundMessageSeq - offset >0) {
+                        baseMessageSeq = aroundMessageSeq - offset;
                     }else {
-                        baseMessageSeq = aroundOrderSeq;
+                        baseMessageSeq = aroundMessageSeq;
                     }
                 }
             }
         }
-        if(baseMessageSeq != 0 ) {
-            // 如果最后一条messageSeq与开始messageSeq的差值小于查询数量，则向上偏移指定数量满足limit
-            if(maxMessageSeqFromDB - baseMessageSeq<limit) {
-                if(baseMessageSeq>(limit - (maxMessageSeqFromDB - baseMessageSeq))) {
-                    baseMessageSeq = baseMessageSeq - (limit - (maxMessageSeqFromDB - baseMessageSeq));
-                }
-               
-            }
-        }
+//        if(baseMessageSeq != 0 ) {
+//            // 如果最后一条messageSeq与开始messageSeq的差值小于查询数量，则向上偏移指定数量满足limit
+//            if(maxMessageSeqFromDB - baseMessageSeq > 0 && maxMessageSeqFromDB - baseMessageSeq<limit) {
+//                if(baseMessageSeq>(limit - (maxMessageSeqFromDB - baseMessageSeq))) {
+//                    baseMessageSeq = baseMessageSeq - (limit - (maxMessageSeqFromDB - baseMessageSeq));
+//                }
+//               
+//            }
+//        }
         baseOrderSeq = [[WKSDK shared].chatManager getOrderSeq:baseMessageSeq];
     }
     
@@ -1168,7 +1177,8 @@
 
 -(void) pullAround:(WKChannel*)channel orderSeq:(uint32_t)aroundOrderSeq  limit:(int)limit complete:(void(^)(NSArray<WKMessage*> *messages,NSError *error))complete {
    
-    
+    [self  pullAround:channel orderSeq:aroundOrderSeq maxMessageSeq:0 limit:limit complete:complete];
+   
 }
 
 

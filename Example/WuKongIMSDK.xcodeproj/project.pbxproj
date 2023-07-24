@@ -82,7 +82,7 @@
 		717E773C2A1CD95B0079EB5C /* WKMessageTableView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = WKMessageTableView.m; sourceTree = "<group>"; };
 		717E77412A1CF5D10079EB5C /* WKSettingView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WKSettingView.h; sourceTree = "<group>"; };
 		717E77422A1CF5D10079EB5C /* WKSettingView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = WKSettingView.m; sourceTree = "<group>"; };
-		742BF67DB2BA13F22924700C /* WuKongIMSDK.podspec */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = WuKongIMSDK.podspec; path = ../WuKongIMSDK.podspec; sourceTree = "<group>"; };
+		742BF67DB2BA13F22924700C /* WuKongIMSDK.podspec */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = WuKongIMSDK.podspec; path = ../WuKongIMSDK.podspec; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		76D1BEF62B6E06589FBE6A18 /* Pods_WuKongIMSDK_Tests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_WuKongIMSDK_Tests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		7ABD133C15E8CCD576E86E10 /* LICENSE */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = LICENSE; path = ../LICENSE; sourceTree = "<group>"; };
 		873B8AEA1B1F5CCA007FD442 /* Main.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = Main.storyboard; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
