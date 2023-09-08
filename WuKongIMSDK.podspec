@@ -34,7 +34,7 @@ Pod::Spec.new do |s|
   
   s.vendored_libraries = 'WuKongIMSDK/Classes/private/arm/lib/*.a'
   
-  s.preserve_paths = 'WuKongIMSDK/Classes/private/arm/lib/*.a','WuKongIMSDK/Classes/private/curve25519/ed25519/**/*.{c,h}'
+  s.preserve_paths = 'WuKongIMSDK/Classes/private/arm/lib/*.a'
   s.libraries = 'opencore-amrnb', 'opencore-amrwb','vo-amrwbenc'
 
   s.source_files = 'WuKongIMSDK/Classes/**/*'
