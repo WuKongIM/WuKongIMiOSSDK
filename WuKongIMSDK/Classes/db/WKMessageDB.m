@@ -13,7 +13,7 @@
 #import "WKReactionDB.h"
 #import "WKUnknownContent.h"
 // 保存消息
-#define SQL_MESSAGE_SAVE [NSString stringWithFormat:@"insert into %@(message_id,message_seq,order_seq,client_msg_no,stream_no,timestamp,from_uid,to_uid,channel_id,channel_type,content_type,content,searchable_word,voice_readed,status,reason_code,extra,setting,flame,flame_second,viewed,viewed_at,is_deleted) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",TB_MESSAGE]
+#define SQL_MESSAGE_SAVE [NSString stringWithFormat:@"insert into %@(message_id,message_seq,order_seq,client_msg_no,stream_no,timestamp,from_uid,to_uid,channel_id,channel_type,content_type,content,searchable_word,voice_readed,status,reason_code,extra,setting,flame,flame_second,viewed,viewed_at,expire,expire_at,is_deleted) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",TB_MESSAGE]
 
 // 保存或更新消息
 //#define SQL_MESSAGE_REPLACE [NSString stringWithFormat:@"insert into %@(message_id,message_seq,order_seq,client_msg_no,timestamp,from_uid,to_uid,channel_id,channel_type,content_type,content,searchable_word,voice_readed,status,extra,revoke,is_deleted) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(client_msg_no) DO UPDATE SET voice_readed=excluded.voice_readed,status=excluded.status",TB_MESSAGE]
@@ -83,6 +83,8 @@
 #define SQL_MESSAGE_DELETE_MESSAGE_ID [NSString stringWithFormat:@"update %@ set is_deleted=1 where message_id=?",TB_MESSAGE]
 // 删除指定id的消息
 #define SQL_MESSAGE_DELETE_CLIENT_SEQ [NSString stringWithFormat:@"update %@ set is_deleted=1 where id=?",TB_MESSAGE]
+
+#define SQL_MESSAGE_DELETE_CLIENT_SEQS [NSString stringWithFormat:@"update %@ set is_deleted=1 where id in ",TB_MESSAGE]
 
 // 彻底删除消息
 #define SQL_MESSAGE_DESTORY_ID [NSString stringWithFormat:@"delete from %@ where id=?",TB_MESSAGE]
@@ -162,6 +164,10 @@
 // 查询流
 #define SQL_STREAM_WITH_STREAM_NO [NSString stringWithFormat:@"select * from %@ where stream_no=? order by stream_seq asc",TB_STREAM]
 
+// 查询过期消息
+#define SQL_EXPIRE_MESSAGES [NSString stringWithFormat:@"select message.*,%@ from %@ left join message_extra on message.message_id=message_extra.message_id where message.is_deleted=0 and message.expire_at<>0 and message.expire_at <= ? order by order_seq asc limit 0,?",SQL_EXTRA_COLS,TB_MESSAGE]
+
+
 
 @implementation WKMessageDB
 
@@ -215,7 +221,11 @@ static WKMessageDB *_instance;
                 }else{
                     orderSeq = [self getMaxOrderSeqWithChannel:db channel:message.channel]+1;
                 }
-                bool success =  [db executeUpdate:SQL_MESSAGE_SAVE,@(message.messageId),@(message.messageSeq),@(orderSeq),message.clientMsgNo?:@"",message.streamNo?:@"",@(message.timestamp),message.fromUid?:@"",message.toUid?:@"",message.channel.channelId?:@"",@(message.channel.channelType),@(message.contentType),message.contentData?:@"",searchableWord?:@"",@(message.voiceReaded),@(message.status),@(message.reasonCode),[self extraToStr:message.extra],@([message.setting toUint8]),@(message.content.flame),@(message.content.flameSecond),@(message.viewed),@(message.viewedAt),@(message.isDeleted)];
+                NSInteger expireAt = 0;
+                if(message.expireAt) {
+                    expireAt = [message.expireAt timeIntervalSince1970];
+                }
+                bool success =  [db executeUpdate:SQL_MESSAGE_SAVE,@(message.messageId),@(message.messageSeq),@(orderSeq),message.clientMsgNo?:@"",message.streamNo?:@"",@(message.timestamp),message.fromUid?:@"",message.toUid?:@"",message.channel.channelId?:@"",@(message.channel.channelType),@(message.contentType),message.contentData?:@"",searchableWord?:@"",@(message.voiceReaded),@(message.status),@(message.reasonCode),[self extraToStr:message.extra],@([message.setting toUint8]),@(message.content.flame),@(message.content.flameSecond),@(message.viewed),@(message.viewedAt),@(message.expire),@(expireAt),@(message.isDeleted)];
                 
                 if(success) {
                     message.clientSeq = (uint32_t)db.lastInsertRowId;
@@ -290,8 +300,11 @@ static WKMessageDB *_instance;
     if(message.messageSeq!=0) {
         orderSeq = message.messageSeq*WKOrderSeqFactor;
     }
-    
-    return  [db executeUpdate:SQL_MESSAGE_SAVE,@(message.messageId),@(message.messageSeq),@(orderSeq),clientMsgNo,message.streamNo?:@"",@(message.timestamp),message.fromUid?:@"",message.toUid?:@"",message.channel.channelId?:@"",@(message.channel.channelType),@(message.contentType),message.contentData?:@"",searchableWord?:@"",@(message.voiceReaded),@(message.status),@(message.reasonCode),[self extraToStr:message.extra],@([message.setting toUint8]),@(message.content.flame),@(message.content.flameSecond),@(message.viewed),@(message.viewedAt),@(isDeleted)];
+    NSInteger expireAt = 0;
+    if(message.expireAt) {
+        expireAt = [message.expireAt timeIntervalSince1970];
+    }
+    return  [db executeUpdate:SQL_MESSAGE_SAVE,@(message.messageId),@(message.messageSeq),@(orderSeq),clientMsgNo,message.streamNo?:@"",@(message.timestamp),message.fromUid?:@"",message.toUid?:@"",message.channel.channelId?:@"",@(message.channel.channelType),@(message.contentType),message.contentData?:@"",searchableWord?:@"",@(message.voiceReaded),@(message.status),@(message.reasonCode),[self extraToStr:message.extra],@([message.setting toUint8]),@(message.content.flame),@(message.content.flameSecond),@(message.viewed),@(message.viewedAt),@(message.expire),@(expireAt),@(isDeleted)];
 }
 
 -(BOOL) existMessage:(uint64_t)messageId db:(FMDatabase*)db{
@@ -750,6 +763,13 @@ static WKMessageDB *_instance;
     }];
 }
 
+-(void) deleteMessagesWithClientSeqs:(NSArray<NSNumber*>*)ids {
+    [WKDB.sharedDB.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        NSString *idStrs = [ids componentsJoinedByString:@","];
+        [db executeUpdate:[NSString stringWithFormat:@"%@ (%@)",SQL_MESSAGE_DELETE_CLIENT_SEQS,idStrs]];
+    }];
+}
+
 - (void)destoryMessage:(WKMessage *)message {
     
     [[WKDB sharedDB].dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
@@ -839,6 +859,21 @@ static WKMessageDB *_instance;
     }];
     return messages;
 }
+
+-(NSArray<WKMessage*>*) getExpireMessages:(NSInteger)limit {
+    __block NSMutableArray *messages = [NSMutableArray array];
+    [WKDB.sharedDB.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        NSTimeInterval nowInterval = [[NSDate date] timeIntervalSince1970];
+        FMResultSet *resultSet = [db executeQuery:SQL_EXPIRE_MESSAGES,@(nowInterval),@(limit)];
+        while(resultSet.next) {
+            NSDictionary *resultDic = resultSet.resultDictionary;
+            [messages addObject:[self toMessage:resultDic db:db]];
+        }
+        [resultSet close];
+    }];
+    return messages;
+}
+
 
 -(void) updateMessageStatus:(WKMessageStatus)status withClientSeq:(uint32_t)clientSeq {
     [[WKDB sharedDB].dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
@@ -987,6 +1022,13 @@ static WKMessageDB *_instance;
     message.localTimestamp = [[self dateFromString:dict[@"created_at"]] timeIntervalSince1970];
     message.fromUid = dict[@"from_uid"];
     message.toUid = dict[@"to_uid"];
+    if(dict[@"expire"]) {
+        message.expire = [dict[@"expire"] integerValue];
+    }
+    if(dict[@"expire_at"]) {
+       NSInteger expireAt = [dict[@"expire_at"] integerValue];
+       message.expireAt = [NSDate dateWithTimeIntervalSince1970:expireAt];
+    }
     message.channel = [[WKChannel alloc] initWith:dict[@"channel_id"] channelType:[dict[@"channel_type"] integerValue]];
     if(dict[@"parent_channel_id"] && ![dict[@"parent_channel_id"] isEqualToString:@""]) {
         message.parentChannel = [[WKChannel alloc] initWith:dict[@"parent_channel_id"] channelType:[dict[@"parent_channel_type"] integerValue]];

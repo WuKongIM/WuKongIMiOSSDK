@@ -23,6 +23,13 @@
 -(WKPacket*) decodeLM:(NSData*) body header:(WKHeader*)header {
     WKConnackPacket *packet = [WKConnackPacket new];
     WKDataRead *reader = [[WKDataRead alloc] initWithData:body];
+    if(WKSDK.shared.options.protoVersion > 3) {
+        packet.serverVersion = [reader readUint8];
+        if(packet.serverVersion < WKSDK.shared.options.protoVersion) {
+            WKSDK.shared.options.protoVersion = packet.serverVersion;
+            NSLog(@"使用协议版本：%hhu",WKSDK.shared.options.protoVersion);
+        }
+    }
     packet.timeDiff = [reader readint64];
     packet.reasonCode = [reader readUint8];
     packet.serverKey = [reader readString];

@@ -26,6 +26,9 @@
 @property(nonatomic,strong) NSTimer *retryTimer;
 @property(nonatomic,strong) NSTimer *messageExtraRetryTimer;
 @property(nonatomic,strong) NSTimer *reminderRetryTimer;
+@property(nonatomic,strong) NSTimer *expireMsgCheckTimer;
+
+@property(nonatomic,assign) BOOL started; // 是否已开始
 
 @end
 @implementation WKRetryManager
@@ -102,6 +105,10 @@ static WKRetryManager *_instance;
 }
 
 -(void) start {
+    if(self.started) {
+        return;
+    }
+    self.started = true;
     __weak typeof(self) weakSelf = self;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0), ^{
         [weakSelf startMessageRetry];
@@ -112,6 +119,42 @@ static WKRetryManager *_instance;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0), ^{
         [weakSelf startReminderRetry];
     });
+    
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0), ^{
+        [weakSelf startReminderRetry];
+    });
+    
+    self.expireMsgCheckTimer = [NSTimer scheduledTimerWithTimeInterval:WKSDK.shared.options.expireMsgCheckInterval target:self selector:@selector(startExpireMsgCheck) userInfo:nil repeats:YES];
+}
+
+-(void) stop {
+    self.started = false;
+    if(self.retryTimer) {
+        [self.retryTimer invalidate];
+        self.retryTimer = nil;
+    }
+    if(self.messageExtraRetryTimer) {
+        [self.messageExtraRetryTimer invalidate];
+        self.messageExtraRetryTimer = nil;
+    }
+    if(self.reminderRetryTimer) {
+        [self.reminderRetryTimer invalidate];
+        self.reminderRetryTimer = nil;
+    }
+    if(self.expireMsgCheckTimer) {
+        [self.expireMsgCheckTimer invalidate];
+        self.expireMsgCheckTimer = nil;
+    }
+}
+
+-(void) startExpireMsgCheck {
+   NSArray<WKMessage*> *messages = [WKMessageDB.shared getExpireMessages:WKSDK.shared.options.expireMsgLimit];
+    if(messages && messages.count>0) {
+        for (WKMessage *message in messages) {
+            [WKSDK.shared.chatManager deleteMessage:message];
+        }
+        
+    }
 }
 
 -(void) startMessageRetry {
@@ -223,20 +266,6 @@ static WKRetryManager *_instance;
     });
 }
 
--(void) stop {
-    if(self.retryTimer) {
-        [self.retryTimer invalidate];
-        self.retryTimer = nil;
-    }
-    if(self.messageExtraRetryTimer) {
-        [self.messageExtraRetryTimer invalidate];
-        self.messageExtraRetryTimer = nil;
-    }
-    if(self.reminderRetryTimer) {
-        [self.reminderRetryTimer invalidate];
-        self.reminderRetryTimer = nil;
-    }
-}
 
 -(void) reminderUpload {
     [self.retryLock lock];

@@ -52,7 +52,11 @@
     [writer writeVariableString:packet.channelId];
     // 频道类型
     [writer writeUint8:packet.channelType];
-    
+    if(WKSDK.shared.options.protoVersion>=3) {
+        // expire
+        [writer writeUint32:(uint32_t)packet.expire];
+    }
+   
     NSString *signStr = [packet veritifyString];
     NSString *msgKey = [[WKSecurityManager shared] encryption:signStr];
     [writer writeVariableString:[[WKSecurityManager shared] md5:msgKey]];

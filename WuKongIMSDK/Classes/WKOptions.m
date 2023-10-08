@@ -26,10 +26,12 @@
        self.reminderDoneUploadExpire = 60 * 60 * 24;
        self.reminderRetryInterval = 10;
        self.reminderRetryCount = 20;
+       self.expireMsgCheckInterval = 10;
+       self.expireMsgLimit = 50;
        
        
        self.offlineMessageLimit = 300;
-       self.protoVersion = 0x2;
+       self.protoVersion = 0x3;
        self.proto = WK_PROTO_WK;
        self.messageFileRootDir =[[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject] stringByAppendingPathComponent:@"files"];
        self.dbPrefix = WK_DB_Prefix;

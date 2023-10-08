@@ -37,6 +37,10 @@
     packet.fromUid = [reader readString];
     packet.channelId = [reader readString];
     packet.channelType = [reader readUint8];
+    if(WKSDK.shared.options.protoVersion>=3) {
+        packet.expire =  [reader readUint32];
+    }
+    
     packet.clientMsgNo = [reader readString];
     if(packet.setting.streamOn) {
         packet.streamNo = [reader readString];

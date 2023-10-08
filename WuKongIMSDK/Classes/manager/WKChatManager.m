@@ -165,6 +165,10 @@
     message.status = status;
     if(setting) {
         message.setting = setting;
+        message.expire = setting.expire;
+        if(setting.expire>0) {
+           message.expireAt = [[NSDate date] dateByAddingTimeInterval:setting.expire];
+        }
     }
     if(topic && ![topic isEqualToString:@""]) {
         message.topic = topic;
@@ -264,6 +268,7 @@
         sendPacket.clientMsgNo = message.clientMsgNo;
         sendPacket.channelId = message.channel.channelId;
         sendPacket.channelType = message.channel.channelType;
+        sendPacket.expire = message.expire;
         sendPacket.topic = message.topic;
         sendPacket.payload = message.content.encode;
         
