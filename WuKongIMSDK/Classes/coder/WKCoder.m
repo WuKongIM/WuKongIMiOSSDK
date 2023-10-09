@@ -57,6 +57,9 @@
     header.noPersist = (flag & 0x01) > 0;
     header.showUnread = ((flag >> 1) & 0x01) > 0;
     header.syncOnce = ((flag >> 2) & 0x01) > 0;
+    if(packetType == WK_CONNACK) {
+        header.hasServerVersion = (flag & 0x01) > 0;
+    }
     
    return  [[[WKSDK shared].bodyCoderManager getBodyCoder:packetType] decode:reader.remainingData header:header];
 }
