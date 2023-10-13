@@ -31,7 +31,7 @@
        
        
        self.offlineMessageLimit = 300;
-       self.protoVersion = 0x4;
+       self.protoVersion = WKDefaultProtoVersion;
        self.proto = WK_PROTO_WK;
        self.messageFileRootDir =[[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject] stringByAppendingPathComponent:@"files"];
        self.dbPrefix = WK_DB_Prefix;

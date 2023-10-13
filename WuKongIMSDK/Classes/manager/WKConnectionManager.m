@@ -388,6 +388,8 @@ static dispatch_queue_t _imsocketQueue;
     
     [[WKSecurityManager shared] generateDHPair];
     
+    WKSDK.shared.options.protoVersion = WKDefaultProtoVersion;
+    
     WKConnectPacket *connectPacket = [WKConnectPacket new];
     connectPacket.clientKey = [[WKSecurityManager shared] getDHPubKey];
     connectPacket.version = [WKSDK shared].options.protoVersion;

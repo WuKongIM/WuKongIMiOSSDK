@@ -19,10 +19,7 @@
   },
   "requires_arc": true,
   "vendored_libraries": "WuKongIMSDK/Classes/private/arm/lib/*.a",
-  "preserve_paths": [
-    "WuKongIMSDK/Classes/private/arm/lib/*.a",
-    "WuKongIMSDK/Classes/private/curve25519/ed25519/**/*.{c,h}"
-  ],
+  "preserve_paths": "WuKongIMSDK/Classes/private/arm/lib/*.a",
   "libraries": [
     "opencore-amrnb",
     "opencore-amrwb",
