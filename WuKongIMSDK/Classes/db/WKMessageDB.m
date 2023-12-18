@@ -81,6 +81,9 @@
 #define SQL_MESSAGE_UPDATE_EXTRA  [NSString stringWithFormat:@"update %@ set extra=? where id=?",TB_MESSAGE]
 // 删除指定id的消息
 #define SQL_MESSAGE_DELETE_MESSAGE_ID [NSString stringWithFormat:@"update %@ set is_deleted=1 where message_id=?",TB_MESSAGE]
+
+#define SQL_MESSAGE_DELETE_MESSAGE_IDS [NSString stringWithFormat:@"update %@ set is_deleted=1 where message_id in ",TB_MESSAGE]
+
 // 删除指定id的消息
 #define SQL_MESSAGE_DELETE_CLIENT_SEQ [NSString stringWithFormat:@"update %@ set is_deleted=1 where id=?",TB_MESSAGE]
 
@@ -768,6 +771,27 @@ static WKMessageDB *_instance;
         NSString *idStrs = [ids componentsJoinedByString:@","];
         [db executeUpdate:[NSString stringWithFormat:@"%@ (%@)",SQL_MESSAGE_DELETE_CLIENT_SEQS,idStrs]];
     }];
+}
+
+-(void) deleteMessagesWithMessageIDs:(NSArray<NSNumber*>*)messageIDs {
+    __weak typeof(self) weakSelf = self;
+    [WKDB.sharedDB.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        [weakSelf deleteMessagesWithMessageIDs:messageIDs db:db];
+    }];
+}
+
+-(void) deleteMessagesWithMessageIDs:(NSArray<NSNumber*>*)messageIDs db:(FMDatabase*)db {
+    if(messageIDs && messageIDs.count==0) {
+        return;
+    }
+    if(messageIDs.count == 1) {
+        NSNumber *messageID = messageIDs[0];
+        [db executeUpdate:SQL_MESSAGE_DELETE_MESSAGE_ID,messageID];
+    }else {
+        NSString *idStrs = [messageIDs componentsJoinedByString:@","];
+        [db executeUpdate:[NSString stringWithFormat:@"%@ (%@)",SQL_MESSAGE_DELETE_MESSAGE_IDS,idStrs]];
+    }
+    
 }
 
 - (void)destoryMessage:(WKMessage *)message {

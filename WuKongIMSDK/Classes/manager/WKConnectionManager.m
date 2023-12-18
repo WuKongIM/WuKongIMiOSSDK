@@ -26,6 +26,7 @@
 #import "WKReminderManager.h"
 #import "WKChatManagerInner.h"
 #import "WKConversationManagerInner.h"
+#import "WKMessageQueueManager.h"
 
 @interface WKConnectionManager ()<GCDAsyncSocketDelegate>
 
@@ -428,7 +429,11 @@ static dispatch_queue_t _imsocketQueue;
 // 发送包
 -(void) sendPacket:(WKPacket*)packet{
     NSData *data = [[WKSDK shared].coder encode:packet];
-    [self.ssocket writeData:data withTimeout:-1 tag:0];
+    [self writeData:data];
+}
+
+-(void) writeData:(NSData*) data {
+    [self.ssocket writeData:data withTimeout:1 tag:0];
 }
 
 - (NSLock *)delegateLock {
@@ -453,8 +458,10 @@ static dispatch_queue_t _imsocketQueue;
 -(void) connectStatusChange {
     if(self.connectStatusInner == WKConnected) {
         [[WKRetryManager shared] start];
+        [WKMessageQueueManager.shared start];
     }else {
         [[WKRetryManager shared] stop];
+        [[WKMessageQueueManager shared] stop];
     }
     if(self.onConnectStatusChange) {
         self.onConnectStatusChange(self.connectStatusInner);
@@ -519,6 +526,9 @@ static dispatch_queue_t _imsocketQueue;
                 [dataList addObject:data];
             }];
             lenAfter = self.tempBufferData.length;
+            if(lenAfter>0) {
+                NSLog(@"有剩余未被解析的包->%lu",lenAfter);
+            }
         } while (lenBefore != lenAfter && lenAfter >= 1);
         if (dataList.count > 0) {
             callback(dataList);
@@ -568,19 +578,23 @@ static dispatch_queue_t _imsocketQueue;
     } while (hasLength);
     
     if (!remLengthFull) {
+        NSLog(@"包长度没有读出来");
         return packData;
     }
     int remLengthLength = pos - fixedHeaderLength; // 剩余长度的长度
     if (fixedHeaderLength + remLengthLength + remLength > length) {
         // 固定头的长度 + 剩余长度的长度 + 剩余长度 如果大于 总长度说明分包了
+        NSLog(@"分包了...");
         return packData;
     }else {
         if (fixedHeaderLength + remLengthLength + remLength == length) {
             // 刚好一个包
+            NSLog(@"刚好一个包");
             callback(packData);
             return [[NSMutableData alloc] init];
         } else {
             // 粘包  大于1个包
+            NSLog(@"粘包  大于1个包");
             int packetLength = fixedHeaderLength + remLengthLength + remLength;;
             callback([packData subdataWithRange:NSMakeRange(0, packetLength)]);
             return [[NSMutableData alloc] initWithData:[packData subdataWithRange:NSMakeRange(packetLength, length-packetLength)]];
@@ -653,6 +667,7 @@ static dispatch_queue_t _imsocketQueue;
 }
 
 -(void) handlePackets:(NSArray<WKPacket*>*)packets {
+    NSLog(@"handlePackets----------------start---->%lu",packets.count);
     NSDictionary<NSNumber*,NSArray<WKPacket*>*>* packetDict = [self packetGroup:packets];
     for (NSNumber *packetTypeNum in packetDict.allKeys) {
         NSArray<WKPacket*> *packetList = [packetDict objectForKey:packetTypeNum];
@@ -661,11 +676,16 @@ static dispatch_queue_t _imsocketQueue;
                 [[WKSDK shared].chatManager handleSendack:(NSArray<WKSendackPacket*> *)packetList];
                 break;
             case WK_RECV:
-                 [[WKSDK shared].chatManager handleRecv:(NSArray<WKRecvPacket*> *)packetList];
+                [[WKSDK shared].chatManager handleRecv:(NSArray<WKRecvPacket*> *)packetList];
+                break;
+            case  WK_PONG:
+                break;
             default:
+                NSLog(@"未知的数据包-->[%d]",packetTypeNum.unsignedIntValue);
                 break;
         }
     }
+    NSLog(@"handlePackets----------------end---->%lu",packets.count);
 }
 
 -( WKConnectStatus) connectStatus {

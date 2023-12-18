@@ -29,6 +29,7 @@
 #import "WKMessageExtraDB.h"
 #import "WKConversationManagerInner.h"
 #import "WKConversationLastMessageAndUnreadCount.h"
+#import "WKMessageQueueManager.h"
 
 @interface WKChatManager ()
 
@@ -253,32 +254,37 @@
 
 -(WKMessage*) sendMessage:(WKMessage*)message addRetryQueue:(BOOL)addRetryQueue{
     
-    
-    dispatch_async(self.sendMessageQueue,^{
-        // 发送消息
-        WKSendPacket *sendPacket = [WKSendPacket new];
-        sendPacket.header.showUnread = message.header?message.header.showUnread:0;
-        sendPacket.header.noPersist = message.header?message.header.noPersist:0;
-        WKSetting *setting = message.setting;
-        if(message.topic && ![message.topic isEqualToString:@""]) {
-            setting.topic = true;
-        }
-        sendPacket.setting = setting;
-        sendPacket.clientSeq = message.clientSeq;
-        sendPacket.clientMsgNo = message.clientMsgNo;
-        sendPacket.channelId = message.channel.channelId;
-        sendPacket.channelType = message.channel.channelType;
-        sendPacket.expire = message.expire;
-        sendPacket.topic = message.topic;
-        sendPacket.payload = message.content.encode;
-        
         if(addRetryQueue) {
             // 添加到重试队列
             [[WKRetryManager shared] add:message];
         }
-        [[[WKSDK shared] connectionManager] sendPacket:sendPacket];
-        
-    });
+        [WKMessageQueueManager.shared sendMessage:message];
+    
+//    dispatch_async(self.sendMessageQueue,^{
+//        // 发送消息
+//        WKSendPacket *sendPacket = [WKSendPacket new];
+//        sendPacket.header.showUnread = message.header?message.header.showUnread:0;
+//        sendPacket.header.noPersist = message.header?message.header.noPersist:0;
+//        WKSetting *setting = message.setting;
+//        if(message.topic && ![message.topic isEqualToString:@""]) {
+//            setting.topic = true;
+//        }
+//        sendPacket.setting = setting;
+//        sendPacket.clientSeq = message.clientSeq;
+//        sendPacket.clientMsgNo = message.clientMsgNo;
+//        sendPacket.channelId = message.channel.channelId;
+//        sendPacket.channelType = message.channel.channelType;
+//        sendPacket.expire = message.expire;
+//        sendPacket.topic = message.topic;
+//        sendPacket.payload = message.content.encode;
+//
+//        if(addRetryQueue) {
+//            // 添加到重试队列
+//            [[WKRetryManager shared] add:message];
+//        }
+//        [[[WKSDK shared] connectionManager] sendPacket:sendPacket];
+//
+//    });
     
     
     
@@ -452,13 +458,16 @@
     }
     
     // 调用委托
-    NSArray<WKMessage*> *messages = [[WKMessageDB shared] getMessagesWithClientSeqs:clientIDs];
-    if(messages && messages.count>0) {
-        for (NSInteger i=0; i<messages.count; i++) {
-            WKMessage *message = messages[i];
-            [self callMessageUpdateDelegate:message left:messages.count-1-i total:messages.count];
+    if(clientIDs.count>0) {
+        NSArray<WKMessage*> *messages = [[WKMessageDB shared] getMessagesWithClientSeqs:clientIDs];
+        if(messages && messages.count>0) {
+            NSLog(@"messages--aaaa------->%lu",messages.count);
+            for (NSInteger i=0; i<messages.count; i++) {
+                WKMessage *message = messages[i];
+                [self callMessageUpdateDelegate:message left:messages.count-1-i total:messages.count];
+            }
+            [self addOrUpdateConversationWithMessages:messages];
         }
-        [self addOrUpdateConversationWithMessages:messages];
     }
     for (NSInteger i=0; i<sendackArray.count; i++) {
         [self callSendackDelegate:sendackArray[i] left:sendackArray.count-(i+1)];
@@ -1426,8 +1435,14 @@
             NSLog(@"更新远程消息扩展失败！->%@",error);
             return;
         }
+       
         [[WKMessageExtraDB shared] addOrUpdateMessageExtras:@[message.remoteExtra]];
         [weakSelf callMessageUpdateDelegate:message];
+        
+        if(message.remoteExtra.isMutualDeleted) { // 如果是双向删除 则删除此消息
+            [weakSelf deleteMessage:message];
+        }
+       
     });
 }
 
@@ -1701,11 +1716,31 @@
                 if(messages && messages.count>0) {
                     NSDictionary *reactionDict=  [[WKReactionDB shared] getReactionDictionary:messageIDs];
                     NSInteger i = messages.count - 1;
+                    
+                    // 消息更新通知
                     for (WKMessage *message in messages) {
                         message.reactions = reactionDict[[NSString stringWithFormat:@"%llu", message.messageId]];
                         [weakSelf callMessageUpdateDelegate:message left:i total:messages.count];
                         i--;
                     }
+                    
+                    // 消息删除通知
+                    NSMutableArray<WKMessage*> *deletedMessages = [NSMutableArray array];
+                    for (WKMessage *message in messages) {
+                        for (WKMessageExtra *messageExtra in results) {
+                            if(messageExtra.isMutualDeleted) {
+                                message.isDeleted = true;
+                                [deletedMessages addObject:message];
+                                break;
+                            }
+                        }
+                    }
+                    if(deletedMessages.count>0) {
+                        for (WKMessage *message in deletedMessages) {
+                            [weakSelf deleteMessage:message];
+                        }
+                    }
+                    
                 }
                // [weakSelf updateMessageExtraFromRemote:results];
             }

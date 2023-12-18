@@ -55,6 +55,7 @@ static WKMessageExtraDB *_instance;
         return;
     }
     [[WKDB sharedDB].dbQueue inTransaction:^(FMDatabase * _Nonnull db, BOOL * _Nonnull rollback) {
+        NSMutableArray<NSNumber*> *needDeleteMessageIDs = [NSMutableArray array];
         for (WKMessageExtra *messageExtra in messageExtras) {
             NSString *extraStr = @"";
             if(messageExtra.extra) {
@@ -65,6 +66,7 @@ static WKMessageExtraDB *_instance;
                 readedAt = [messageExtra.readedAt timeIntervalSince1970];
             }
             [db executeUpdate:SQL_MESSAGE_EXTRA_INSERT_OR_UPDATE,@(messageExtra.messageID),@(messageExtra.messageSeq),messageExtra.channelID?:@"",@(messageExtra.channelType),@(messageExtra.readed),@(readedAt),@(messageExtra.readedCount),@(messageExtra.unreadCount),@(messageExtra.revoke),messageExtra.revoker?:@"",messageExtra.contentEditData?:@"",@(messageExtra.editedAt),extraStr,@(messageExtra.extraVersion)];
+            
         }
     }];
 }

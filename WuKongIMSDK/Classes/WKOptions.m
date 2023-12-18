@@ -44,6 +44,9 @@
        self.receiptFlushInterval = 2;
        
        self.channelRequestMaxLimit = 10;
+       
+       self.sendFrequency = 100;
+       self.sendMaxCountOfEach = 5;
    }
    return self;
 }
