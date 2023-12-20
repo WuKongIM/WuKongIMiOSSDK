@@ -19,6 +19,7 @@
 #import "WKCMDDB.h"
 #import "WKDB.h"
 #import "WKMessage.h"
+#import "WKCMDContent.h"
 
 @implementation WKCMDMessage
 
@@ -27,6 +28,23 @@
         return [cmdMessage.cmd isEqualToString:self.cmd] && [cmdMessage.param isEqualToString:self.param];
     }
     return false;
+}
+
++(WKCMDMessage*) fromMessage:(WKMessage*)message {
+    WKCMDMessage *cmdMessage = [WKCMDMessage new];
+    cmdMessage.clientMsgNo = message.clientMsgNo;
+    cmdMessage.messageId = message.messageId;
+    cmdMessage.messageSeq = message.messageSeq;
+    cmdMessage.timestamp = message.timestamp;
+    
+    WKCMDContent *cmdContent = (WKCMDContent*)message.content;
+    cmdMessage.cmd = cmdContent.cmd;
+    if(cmdContent.param) {
+        NSData *paramData =  [NSJSONSerialization dataWithJSONObject:cmdContent.param options:kNilOptions error:nil];
+        NSString *paramStr = [[NSString alloc] initWithData:paramData encoding:NSUTF8StringEncoding];
+        cmdMessage.param = paramStr;
+    }
+    return cmdMessage;
 }
 
 @end

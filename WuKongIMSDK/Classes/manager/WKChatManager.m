@@ -541,6 +541,12 @@
     }
     
     NSArray<WKCMDModel*> *cmds = [self getCMDModels:messages]; // 获取命令消息
+    if(cmds && cmds.count>0) {
+       NSArray<WKCMDMessage*> *cmdMessages = [self getCMDMessages:messages];
+        if(cmdMessages.count>0) {
+            [WKCMDDB.shared replaceCMDMessages:cmdMessages];
+        }
+    }
     
     NSArray<WKMessage*> *commonMessages  = [self filterNoCMDAndNoStreamMessages:messages]; // 非cmd消息和流消息
     
@@ -598,6 +604,19 @@
     }
     return cmds;
 }
+
+-(NSArray<WKCMDMessage*>*) getCMDMessages:(NSArray<WKMessage*>*)messages {
+    NSMutableArray *cmds = [NSMutableArray array];
+    if(messages && messages.count) {
+        for (WKMessage *message in messages) {
+            if(message.contentType == WK_CMD) {
+                [cmds addObject:[WKCMDMessage fromMessage:message]];
+            }
+        }
+    }
+    return cmds;
+}
+
 // 排除掉非命令消息和流消息
 -(NSArray<WKMessage*>*) filterNoCMDAndNoStreamMessages:(NSArray<WKMessage*>*)messages {
     NSMutableArray *newMessages = [NSMutableArray array];
@@ -619,7 +638,7 @@
     NSMutableArray *items = [NSMutableArray array];
     if(messages && messages.count>0) {
         for (WKMessage *message in messages) {
-            if(message.header && !message.header.noPersist) {
+            if(message.header && !message.header.noPersist && message.contentType != WK_CMD) {
                 if(!message.setting.streamOn || (message.setting.streamOn && message.streamFlag == WKStreamFlagStart)) {
                     [items addObject:message];
                 }

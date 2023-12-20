@@ -6,7 +6,7 @@
 //
 
 #import <Foundation/Foundation.h>
-
+#import "WKMessage.h"
 NS_ASSUME_NONNULL_BEGIN
 
 @interface WKCMDMessage : NSObject
@@ -29,6 +29,7 @@ NS_ASSUME_NONNULL_BEGIN
 // 是否为系统cmd消息
 -(BOOL) same:(WKCMDMessage*)cmdMessage;
 
++(WKCMDMessage*) fromMessage:(WKMessage*)message;
 
 
 @end
