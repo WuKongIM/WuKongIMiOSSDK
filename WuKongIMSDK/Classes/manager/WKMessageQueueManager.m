@@ -74,12 +74,18 @@ static WKMessageQueueManager *_instance;
         self.timer = nil;
     }
     CGFloat delay = (double)WKSDK.shared.options.sendFrequency/1000.0f;
-    NSLog(@"delay--->%0.2f",delay);
-    self.timer = [NSTimer scheduledTimerWithTimeInterval:delay target:self selector:@selector(flushQueue) userInfo:nil repeats:YES];
+    NSLog(@"MessageQueue start delay: %0.2f",delay);
+    
+    __weak typeof(self) weakSelf = self;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        weakSelf.timer = [NSTimer scheduledTimerWithTimeInterval:delay target:weakSelf selector:@selector(flushQueue) userInfo:nil repeats:YES];
+    });
+  
     
 }
 
 -(void) stop {
+    NSLog(@"MessageQueue stop");
     [self.sendPackets removeAllObjects];
     if(self.timer) {
         [self.timer invalidate];

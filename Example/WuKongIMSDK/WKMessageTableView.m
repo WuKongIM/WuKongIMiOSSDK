@@ -47,7 +47,8 @@
     }
     MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo:self animated:YES];
     __weak typeof(self) weakSelf = self;
-    [WKSDK.shared.chatManager pullLastMessages:self.channel limit:15 alwayRequest:true complete:^(NSArray<WKMessage *> * _Nonnull messages, NSError * _Nonnull error) {
+    
+    [WKSDK.shared.chatManager pullLastMessages:self.channel limit:15  complete:^(NSArray<WKMessage *> * _Nonnull messages, NSError * _Nonnull error) {
         if(error) {
             NSLog(@"加载消息失败！->%@",error);
             hud.mode = MBProgressHUDModeText;

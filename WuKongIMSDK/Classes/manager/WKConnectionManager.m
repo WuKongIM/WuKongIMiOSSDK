@@ -667,7 +667,6 @@ static dispatch_queue_t _imsocketQueue;
 }
 
 -(void) handlePackets:(NSArray<WKPacket*>*)packets {
-    NSLog(@"handlePackets----------------start---->%lu",packets.count);
     NSDictionary<NSNumber*,NSArray<WKPacket*>*>* packetDict = [self packetGroup:packets];
     for (NSNumber *packetTypeNum in packetDict.allKeys) {
         NSArray<WKPacket*> *packetList = [packetDict objectForKey:packetTypeNum];
@@ -685,7 +684,6 @@ static dispatch_queue_t _imsocketQueue;
                 break;
         }
     }
-    NSLog(@"handlePackets----------------end---->%lu",packets.count);
 }
 
 -( WKConnectStatus) connectStatus {

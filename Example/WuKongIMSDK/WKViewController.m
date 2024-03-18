@@ -76,7 +76,6 @@
     WKOptions *options = [[WKOptions alloc] init];
     options.host = self.ip;
     options.port = self.port;
-    options.heartbeatInterval = 10;
     
     // 设置连接信息
     WKConnectInfo *connectInfo = [WKConnectInfo new];

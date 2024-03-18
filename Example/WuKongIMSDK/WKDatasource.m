@@ -41,7 +41,6 @@
             WKSyncChannelMessageModel *model = [WKSyncChannelMessageModel new];
             model.startMessageSeq = (uint32_t)[dict[@"start_message_seq"] unsignedLongLongValue];
             model.endMessageSeq = (uint32_t)[dict[@"end_message_seq"] unsignedLongLongValue];
-            model.more = [dict[@"more"] boolValue];
             NSArray<NSDictionary*> *messageDicts = dict[@"messages"];
             if(messageDicts && messageDicts.count>0) {
                 NSMutableArray *messages = [NSMutableArray array];

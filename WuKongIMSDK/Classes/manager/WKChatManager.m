@@ -461,7 +461,6 @@
     if(clientIDs.count>0) {
         NSArray<WKMessage*> *messages = [[WKMessageDB shared] getMessagesWithClientSeqs:clientIDs];
         if(messages && messages.count>0) {
-            NSLog(@"messages--aaaa------->%lu",messages.count);
             for (NSInteger i=0; i<messages.count; i++) {
                 WKMessage *message = messages[i];
                 [self callMessageUpdateDelegate:message left:messages.count-1-i total:messages.count];
