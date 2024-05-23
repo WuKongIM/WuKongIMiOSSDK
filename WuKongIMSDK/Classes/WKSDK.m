@@ -182,6 +182,10 @@ static WKSDK *_instance;
     return [WKFlameManager shared];
 }
 
+- (WKPinnedMessageManager *)pinnedMessageManager {
+    return WKPinnedMessageManager.shared;
+}
+
 
 -(WKCoder*) coder{
     if(!_coder){

@@ -35,6 +35,8 @@ typedef enum : NSUInteger {
 @property(nonatomic,assign) WKContentEditUploadStatus uploadStatus; // 上传状态
 @property(nonatomic,assign) BOOL isMutualDeleted; // 是否双向删除
 
+@property(nonatomic,assign) BOOL isPinned; // 是否已置顶
+
 @property(nonatomic,copy) NSDictionary *extra; // 扩展数据
 
 @end

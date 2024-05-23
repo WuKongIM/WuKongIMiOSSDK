@@ -8,7 +8,7 @@
 #import "WKMessageExtraDB.h"
 #import "WKMessageDB.h"
 #import "WKDB.h"
-#define SQL_MESSAGE_EXTRA_INSERT_OR_UPDATE [NSString stringWithFormat:@"insert into message_extra( message_id,message_seq,channel_id,channel_type,readed,readed_at,readed_count,unread_count,revoke,revoker,content_edit,edited_at,extra,extra_version) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(message_id) DO UPDATE SET readed=excluded.readed,readed_at=excluded.readed_at,readed_count=excluded.readed_count,unread_count=excluded.unread_count,revoke=excluded.revoke,revoker=excluded.revoker,content_edit=excluded.content_edit,edited_at=excluded.edited_at,extra=excluded.extra,extra_version=excluded.extra_version"]
+#define SQL_MESSAGE_EXTRA_INSERT_OR_UPDATE [NSString stringWithFormat:@"insert into message_extra( message_id,message_seq,channel_id,channel_type,readed,readed_at,readed_count,unread_count,revoke,revoker,is_pinned,content_edit,edited_at,extra,extra_version) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(message_id) DO UPDATE SET readed=excluded.readed,readed_at=excluded.readed_at,readed_count=excluded.readed_count,unread_count=excluded.unread_count,revoke=excluded.revoke,revoker=excluded.revoker,is_pinned=excluded.is_pinned,content_edit=excluded.content_edit,edited_at=excluded.edited_at,extra=excluded.extra,extra_version=excluded.extra_version"]
 
 // 获取指定频道的最大扩展版本号
 #define SQL_MESSAGE_EXTRA_MAX_VERSION [NSString stringWithFormat:@"select max(extra_version) max_version from %@ where channel_id=? and channel_type=?",@"message_extra"]
@@ -65,7 +65,7 @@ static WKMessageExtraDB *_instance;
             if(messageExtra.readedAt) {
                 readedAt = [messageExtra.readedAt timeIntervalSince1970];
             }
-            [db executeUpdate:SQL_MESSAGE_EXTRA_INSERT_OR_UPDATE,@(messageExtra.messageID),@(messageExtra.messageSeq),messageExtra.channelID?:@"",@(messageExtra.channelType),@(messageExtra.readed),@(readedAt),@(messageExtra.readedCount),@(messageExtra.unreadCount),@(messageExtra.revoke),messageExtra.revoker?:@"",messageExtra.contentEditData?:@"",@(messageExtra.editedAt),extraStr,@(messageExtra.extraVersion)];
+            [db executeUpdate:SQL_MESSAGE_EXTRA_INSERT_OR_UPDATE,@(messageExtra.messageID),@(messageExtra.messageSeq),messageExtra.channelID?:@"",@(messageExtra.channelType),@(messageExtra.readed),@(readedAt),@(messageExtra.readedCount),@(messageExtra.unreadCount),@(messageExtra.revoke),messageExtra.revoker?:@"",@(messageExtra.isPinned),messageExtra.contentEditData?:@"",@(messageExtra.editedAt),extraStr,@(messageExtra.extraVersion)];
             
         }
     }];
@@ -92,7 +92,7 @@ static WKMessageExtraDB *_instance;
     if(messageExtra.readedAt) {
         readedAt = [messageExtra.readedAt timeIntervalSince1970];
     }
-    [db executeUpdate:SQL_MESSAGE_EXTRA_INSERT_OR_UPDATE,@(messageExtra.messageID),@(messageExtra.messageSeq),messageExtra.channelID?:@"",@(messageExtra.channelType),@(messageExtra.readed),@(readedAt),@(messageExtra.readedCount),@(messageExtra.unreadCount),@(messageExtra.revoke),messageExtra.revoker?:@"",messageExtra.contentEditData?:@"",@(messageExtra.editedAt),extraStr,@(messageExtra.extraVersion)];
+    [db executeUpdate:SQL_MESSAGE_EXTRA_INSERT_OR_UPDATE,@(messageExtra.messageID),@(messageExtra.messageSeq),messageExtra.channelID?:@"",@(messageExtra.channelType),@(messageExtra.readed),@(readedAt),@(messageExtra.readedCount),@(messageExtra.unreadCount),@(messageExtra.revoke),messageExtra.revoker?:@"",@(messageExtra.isPinned),messageExtra.contentEditData?:@"",@(messageExtra.editedAt),extraStr,@(messageExtra.extraVersion)];
 }
 
 -(void) addOrUpdateContentEdit:(WKMessageExtra*)messageExtra {
@@ -153,6 +153,7 @@ static WKMessageExtraDB *_instance;
     messageExtra.channelID = [resultSet stringForColumn:@"channel_id"];
     messageExtra.channelType = [resultSet intForColumn:@"channel_type"];
     messageExtra.readed = [resultSet boolForColumn:@"readed"];
+    messageExtra.isPinned = [resultSet boolForColumn:@"is_pinned"];
     NSInteger readedAt = [resultSet intForColumn:@"readed_at"];
     if(readedAt>0) {
         messageExtra.readedAt = [NSDate dateWithTimeIntervalSince1970:readedAt];

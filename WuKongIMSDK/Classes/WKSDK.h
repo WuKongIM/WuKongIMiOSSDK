@@ -84,6 +84,9 @@ NS_ASSUME_NONNULL_BEGIN
 // 机器人管理者
 @property(nonatomic,strong) WKRobotManager *robotManager;
 
+// 置顶消息管理者
+@property(nonatomic,strong) WKPinnedMessageManager *pinnedMessageManager;
+
 // 提醒管理者
 // 负责最近会话的提醒项，比如 有人@我，入群申请等等 还可以自定义一些提醒，比如类似微信的 [红包] [转账] 列表都会有提醒
 @property(nonatomic,strong) WKReminderManager *reminderManager;
@@ -92,6 +95,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 // sdk版本号，每次升级记得修改此处
 @property(nonatomic,copy,readonly) NSString *sdkVersion;
+
+
 
 /**
  是否是debug模式

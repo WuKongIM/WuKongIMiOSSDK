@@ -18,7 +18,7 @@
 }
 
 +(NSString*) getClientMsgNo:(NSString*)custId toCustId:(NSString*)toCustId chatId:(NSString*)chatId {
-    return [NSString stringWithFormat:@"%@%@",[self getUUID],@"2"]; // clientMsgNo后面加一位 表示客户端标识 1.android 2.iOS
+    return [NSString stringWithFormat:@"%@%@",[self getUUID],@"2"]; // clientMsgNo后面加一位 表示客户端标识 0.系统 1.android 2.iOS 3.Web
 //    NSTimeInterval timeInterval = [[NSDate date] timeIntervalSince1970]*1000*1000*1000;
 //    NSString  *msgNoStr = [NSString stringWithFormat:@"%@:%@:%@:%llu",custId,toCustId,chatId,(unsigned long long)timeInterval];
 //    uint64_t msgNo = get_sign64([msgNoStr UTF8String], (int)[msgNoStr length]);

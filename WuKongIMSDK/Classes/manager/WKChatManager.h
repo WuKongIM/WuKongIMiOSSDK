@@ -101,6 +101,13 @@ typedef BOOL(^MessageStoreBeforeIntercept)(WKMessage*message);
 /// 保存消息
 -(void) saveMessages:(NSArray<WKMessage*>*)messages;
 
+
+// 添加或更新消息（如果存在则更新，不存在添加）
+- (void) addOrUpdateMessages:(NSArray<WKMessage*>*)messages;
+
+// 添加或更新消息（如果存在则更新，不存在添加）
+// notify 是否通知ui
+-(void) addOrUpdateMessages:(NSArray<WKMessage*>*)messages notify:(BOOL)notify;
 /**
  转发消息
 

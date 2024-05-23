@@ -212,7 +212,34 @@
     [self addOrUpdateConversationWithMessages:messages];
 }
 
+-(void) addOrUpdateMessages:(NSArray<WKMessage*>*)messages  {
+    if(!messages || messages.count<=0) {
+        return;
+    }
+    for (WKMessage *message in messages) {
+        message.isDeleted = ![self needStoreOfIntercept:message];
+    }
+    [WKMessageDB.shared replaceMessages:messages];
+    // 更新最近会话
+    [self addOrUpdateConversationWithMessages:messages];
+}
 
+-(void) addOrUpdateMessages:(NSArray<WKMessage*>*)messages notify:(BOOL)notify {
+    if(!messages || messages.count<=0) {
+        return;
+    }
+    for (WKMessage *message in messages) {
+        message.isDeleted = ![self needStoreOfIntercept:message];
+    }
+    [WKMessageDB.shared replaceMessages:messages];
+    
+    if(notify) {
+        for(WKMessage *message in messages) {
+            [self callMessageUpdateDelegate:message];
+        }
+    }
+   
+}
 
 -(WKConversation*) toConversationWtihMessage:(WKMessage*)message {
     WKConversation *conversation = [WKConversation new];

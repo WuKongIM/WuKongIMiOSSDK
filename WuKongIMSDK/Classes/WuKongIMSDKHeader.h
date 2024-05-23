@@ -12,6 +12,7 @@
 #import "WKCoder.h"
 #import "WKPakcetBodyCoderManager.h"
 #import "WKChatManager.h"
+#import "WKPinnedMessageManager.h"
 #import "WKMessageContent.h"
 #import "WKConversationManager.h"
 #import "WKChannelManager.h"

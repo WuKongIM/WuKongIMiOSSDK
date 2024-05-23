@@ -29,7 +29,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 /**
- 添加媒体委托
+ 添加cmd委托
  
  @param delegate <#delegate description#>
  */
@@ -37,7 +37,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 /**
- 移除媒体委托
+ 移除cmd委托
  
  @param delegate <#delegate description#>
  */

@@ -32,7 +32,7 @@
 //#define SQL_MESSAGE_QUERY_OLDESTID [NSString stringWithFormat:@"select *  from %@  where  channel_id=? and channel_type=? and is_deleted=0 and content_type<>0 and content_type<>99 and order_seq < ?   order by order_seq desc limit 0,?",TB_MESSAGE]
 
 // 扩展表的字段
-#define SQL_EXTRA_COLS [NSString stringWithFormat:@"%@,%@,%@,%@,%@,%@,%@,%@,%@,%@",@"IFNULL(message_extra.readed,0) readed",@"IFNULL(message_extra.readed_at,0) readed_at",@"IFNULL(message_extra.readed_count,0) readed_count",@"IFNULL(message_extra.unread_count,0) unread_count",@"IFNULL(message_extra.revoke,'') revoke",@"IFNULL(message_extra.revoker,0) revoker",@"IFNULL(message_extra.content_edit,'') content_edit",@"IFNULL(message_extra.edited_at,0) edited_at",@"IFNULL(message_extra.upload_status,0) upload_status",@"IFNULL(message_extra.extra_version,0) extra_version"]
+#define SQL_EXTRA_COLS [NSString stringWithFormat:@"%@,%@,%@,%@,%@,%@,%@,%@,%@,%@,%@",@"IFNULL(message_extra.readed,0) readed",@"IFNULL(message_extra.readed_at,0) readed_at",@"IFNULL(message_extra.readed_count,0) readed_count",@"IFNULL(message_extra.unread_count,0) unread_count",@"IFNULL(message_extra.revoke,'') revoke",@"IFNULL(message_extra.revoker,0) revoker",@"IFNULL(message_extra.is_pinned,0) is_pinned",@"IFNULL(message_extra.content_edit,'') content_edit",@"IFNULL(message_extra.edited_at,0) edited_at",@"IFNULL(message_extra.upload_status,0) upload_status",@"IFNULL(message_extra.extra_version,0) extra_version"]
 
 #define SQL_MESSAGE_QUERY_OLDESTID_DESC(symbol,symbol2) [NSString stringWithFormat:@"select message.*,%@  from %@ left join message_extra on message.message_id=message_extra.message_id  where  message.channel_id=? and message.channel_type=? and message.is_deleted=0  and message.content_type<>99 and message.order_seq %@ ? %@  order by message.order_seq desc,message.timestamp desc limit 0,?",SQL_EXTRA_COLS,TB_MESSAGE,symbol,symbol2?[NSString stringWithFormat:@" and message.order_seq %@ ?",symbol2]:@""]
 
@@ -1094,6 +1094,10 @@ static WKMessageDB *_instance;
     }
     if(dict[@"revoker"]) {
         message.remoteExtra.revoker = dict[@"revoker"];
+    }
+    
+    if(dict[@"is_pinned"]) {
+        message.remoteExtra.isPinned = [dict[@"is_pinned"] boolValue];
     }
     
     if(dict[@"readed_count"]) {
