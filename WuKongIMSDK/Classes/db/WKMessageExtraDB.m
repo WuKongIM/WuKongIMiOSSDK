@@ -55,7 +55,6 @@ static WKMessageExtraDB *_instance;
         return;
     }
     [[WKDB sharedDB].dbQueue inTransaction:^(FMDatabase * _Nonnull db, BOOL * _Nonnull rollback) {
-        NSMutableArray<NSNumber*> *needDeleteMessageIDs = [NSMutableArray array];
         for (WKMessageExtra *messageExtra in messageExtras) {
             NSString *extraStr = @"";
             if(messageExtra.extra) {

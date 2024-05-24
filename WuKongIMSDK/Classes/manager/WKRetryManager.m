@@ -11,7 +11,6 @@
 #import "WKChatManager.h"
 #import "WKMessageExtraDB.h"
 #import "WKReminderDB.h"
-#import "WKChatManagerInner.h"
 @implementation WKRetryItem
 
 

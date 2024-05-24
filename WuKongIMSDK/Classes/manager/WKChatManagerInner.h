@@ -42,8 +42,6 @@
 // 调用消息状态改变委托
 //- (void)callMessageStatusChangeDelegate:(NSArray<WKMessageStatusModel*>*)statusModels;
 
-// 调用消息更新委托
-- (void)callMessageUpdateDelegate:(WKMessage*)message left:(NSInteger)left total:(NSInteger)total;
 
 
 

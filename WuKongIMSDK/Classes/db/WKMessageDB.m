@@ -1082,6 +1082,13 @@ static WKMessageDB *_instance;
     }
     
     message.isDeleted = [dict[@"is_deleted"] boolValue];
+    
+    
+    message.hasRemoteExtra = true; // 这个目前好像没啥用，一直是true就可以
+    message.remoteExtra.messageID = message.messageId;
+    message.remoteExtra.messageSeq = message.messageSeq;
+    message.remoteExtra.channelID = message.channel.channelId;
+    message.remoteExtra.channelType = message.channel.channelType;
     if(dict[@"readed"]) {
         message.remoteExtra.readed = [dict[@"readed"] integerValue]>0;
     }
@@ -1117,6 +1124,7 @@ static WKMessageDB *_instance;
     if(dict[@"setting"]) {
         message.setting = [WKSetting fromUint8:[dict[@"setting"] integerValue]];
     }
+    
     if(dict[@"edited_at"]) {
         message.remoteExtra.editedAt = [dict[@"edited_at"] integerValue];
     }

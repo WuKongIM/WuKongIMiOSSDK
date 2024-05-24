@@ -351,6 +351,9 @@ typedef BOOL(^MessageStoreBeforeIntercept)(WKMessage*message);
 // 消息编辑提供者
 @property(nonatomic,copy) WKMessageEditProvider messageEditProvider;
 
+// 调用消息更新委托
+- (void)callMessageUpdateDelegate:(WKMessage*)message left:(NSInteger)left total:(NSInteger)total;
+
 @end
 
 /**
@@ -412,6 +415,8 @@ typedef BOOL(^MessageStoreBeforeIntercept)(WKMessage*message);
 
 // 流消息
 -(void) onMessageStream:(WKStream*)stream;
+
+
 
 @end
 
