@@ -56,7 +56,7 @@ Pod::Spec.new do |s|
   }
   s.user_target_xcconfig = { 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'arm64' }
 
-  s.dependency 'CocoaAsyncSocket', '~> 7.6.4'
+  s.dependency 'CocoaAsyncSocket', '~> 7.6.5'
   s.dependency 'FMDB/SQLCipher', '~>2.7.5'
   s.dependency '25519', '~>2.0.2'
 end
