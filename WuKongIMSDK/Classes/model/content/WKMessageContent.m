@@ -354,7 +354,7 @@ NSString * const WKEntityTypeRobotCommand = @"bot_command";
 
 - (NSInteger)realContentType {
     NSNumber *contentType = [[self class] contentType];
-    if(contentType) {
+    if(contentType && contentType.integerValue != 0) {
         return contentType.integerValue;
     }
     if(self.contentDict && self.contentDict[@"type"] && [self.contentDict[@"type"] integerValue]!=0) {
