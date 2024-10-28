@@ -644,7 +644,7 @@
     NSMutableArray *newMessages = [NSMutableArray array];
     if(messages && messages.count>0) {
         for (WKMessage *message in messages) {
-            if((message.isDeleted == 0 && message.contentType != WK_CMD)) {
+            if(message.contentType != WK_CMD) {
                 if(!message.setting.streamOn ||  (message.setting.streamOn && message.streamFlag == WKStreamFlagStart)) {
                     [newMessages addObject:message];
                 }
