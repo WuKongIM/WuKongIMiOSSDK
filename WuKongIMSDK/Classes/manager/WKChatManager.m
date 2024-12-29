@@ -110,7 +110,7 @@
     if(clientMsgNo && ![clientMsgNo isEqualToString:@""]) {
         message.clientMsgNo = clientMsgNo;
     }else{
-        message.clientMsgNo = [WKUUIDUtil getClientMsgNo:fromUid toCustId:channel.channelId chatId:@""];
+        message.clientMsgNo = [WKUUIDUtil getClientMsgNo:WKSDK.shared.options.clientMsgDeviceId];
     }
     
     
